@@ -38,7 +38,6 @@ class Mapper(object):
         for result in results:
             data = dict(zip(variables, result))
             instance = self.new_instance()
-            yield instance
             self.bind_instance(graph, instance, data)
             yield instance
     
