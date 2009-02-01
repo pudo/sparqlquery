@@ -44,7 +44,7 @@ class GraphPattern(object):
 
 class Select(object):
     def __init__(self, variables, *graph_patterns):
-        self.variables = set(variables)
+        self.variables = list(variables)
         self.graph_patterns = map(GraphPattern.from_obj, graph_patterns)
     
     def execute(self, graph):
