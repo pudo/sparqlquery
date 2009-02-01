@@ -41,6 +41,7 @@ if __name__ == '__main__':
     
     graph = ConjunctiveGraph()
     graph.load('60611165.rdf')
+    graph.load('PatientRecord-DL.owl')
     
     patients = list(query(Patient, graph))
     
