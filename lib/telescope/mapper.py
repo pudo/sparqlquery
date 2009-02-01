@@ -1,6 +1,6 @@
 from rdflib import Namespace, Variable, Literal, URIRef
 from telescope.properties import Term
-from telescope.sparql.expressions import Select
+from telescope.sparql.select import Select
 
 __all__ = ['Mapper', 'mapper', 'query']
 
@@ -33,7 +33,7 @@ class Mapper(object):
                 value = descriptor.to_python(graph, value)
                 descriptor.__set__(instance, value)
     
-    def map_results(self, graph, query, results):
+    def bind_results(self, graph, query, results):
         variables = query.variables
         for result in results:
             data = dict(zip(variables, result))
@@ -51,7 +51,7 @@ class Mapper(object):
             triples.extend(term.build_triples(instance, Variable(name)))
         select = Select(variables, triples)
         results = select.execute(graph)
-        return self.map_results(graph, select, results)
+        return self.binf_results(graph, select, results)
 
 def mapper(class_, rdf_type, properties=None):
     class_._mapper = Mapper(class_, rdf_type, properties)

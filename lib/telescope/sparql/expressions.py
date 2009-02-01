@@ -1,10 +1,5 @@
-from rdflib import Literal
-
-def n3(term):
-    if hasattr(term, 'n3'):
-        return term.n3()
-    else:
-        return Literal(term).n3()
+from rdflib import URIRef
+from telescope.sparql.compiler import n3
 
 class Triple(object):
     def __init__(self, subject, predicate, object):
@@ -28,33 +23,96 @@ class Triple(object):
     def compile(self):
         return ' '.join(map(n3, self))
 
-class GraphPattern(object):
-    def __init__(self, *triples):
-        self.triples = map(Triple.from_obj, triples)
+class Expression(object):
+    def __init__(self, operator, expression, lang=None, type=None):
+        self.operator = operator
+        self.expression = expression
+        self.language = lang
+        self.datatype = type
     
-    @classmethod
-    def from_obj(cls, obj):
-        if isinstance(obj, GraphPattern):
-            return obj
-        else:
-            return cls(*obj)
+    def _clone(self, **kwargs):
+        clone = self.__class__.__new__(self.__class__)
+        clone.__dict__.update(self.__dict__)
+        clone.__dict__.update(kwargs)
+        return clone
     
-    def compile(self):
-        return '{\n%s\n}' % ' .\n'.join(t.compile() for t in self.triples)
+    def _lang(self, language):
+        """Emulates @lang."""
+        return self._clone(language=language)
+    
+    def _type(self, datatype):
+        """Emulates ^^type."""
+        return self._clone(datatype=datatype)
+    
+    # Special operators.
+    
+    def __pow__(self, datatype):
+        """Emulates ^^type."""
+        return self._type(datatype)
+    
+    # Logical operators.
+    
+    def __or__(self, other):
+        return BinaryExpression(operator.or_, self, other)
+    
+    def __and__(self, other):
+        return BinaryExpression(operator.and_, self, other)
+    
+    # Unary operators.
+    
+    def __pos__(self):
+        return Expression(operator.pos, self)
+    
+    def __neg__(self):
+        return Expression(operator.neg, self)
+    
+    def __invert__(self):
+        return Expression(operator.invert, self)
+    
+    # Numeric operators.
+    
+    def __eq__(self, other):
+        return BinaryExpression(operator.eq, self, other)
+    
+    def __ne__(self, other):
+        return BinaryExpression(operator.ne, self, other)
+    
+    def __lt__(self, other):
+        return BinaryExpression(operator.lt, self, other)
+    
+    def __gt__(self, other):
+        return BinaryExpression(operator.gt, self, other)
+    
+    def __le__(self, other):
+        return BinaryExpression(operator.le, self, other)
+    
+    def __ge__(self, other):
+        return BinaryExpression(operator.ge, self, other)
+    
+    # Additive operators.
+    
+    def __add__(self, other):
+        return BinaryExpression(operator.add, self, other)
+    
+    def __sub__(self, other):
+        return BinaryExpression(operator.sub, self, other)
+    
+    # Multiplicative operators.
+    
+    def __mul__(self, other):
+        return BinaryExpression(operator.mul, self, other)
+    
+    def __div__(self, other):
+        return BinaryExpression(operator.div, self, other)
 
-class Select(object):
-    def __init__(self, variables, *graph_patterns):
-        self.variables = list(variables)
-        self.graph_patterns = map(GraphPattern.from_obj, graph_patterns)
-    
-    def execute(self, graph):
-        return graph.query(self.compile())
-    
-    def compile(self):
-        variables = ' '.join(map(n3, self.variables))
-        if len(self.graph_patterns) == 1:
-            patterns = self.graph_patterns[0].compile()
-        else:
-            compiled = [pattern.compile() for pattern in self.graph_patterns]
-            patterns = '{\n%s\n}' % '\n'.join(compiled)
-        return 'SELECT %s\nWHERE %s' % (variables, patterns)
+class BinaryExpression(Expression):
+    def __init__(self, operator, left, right):
+        Expression.__init__(self, operator, None)
+        self.left = left
+        self.right = right
+
+def lang(expression, language):
+    return Expression(None, expression, language)
+
+def datatype(expression, type):
+    return Expression(None, expression, type=type)
