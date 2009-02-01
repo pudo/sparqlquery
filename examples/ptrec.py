@@ -31,13 +31,6 @@ class Event(Subject):
     def __repr__(self):
         return "Event(%r)" % (self.type,)
 
-class PatientRecord(Subject):
-    RDF_TYPE = PTREC.PatientRecord
-    patient = Single(Patient)
-    events = Collection(Event)
-    
-    def __repr__(self):
-        return "PatientRecord(%r)" % (self.patient.ccfid,)
 
 if __name__ == '__main__':
     from rdflib.Graph import Graph
@@ -61,6 +54,8 @@ if __name__ == '__main__':
     ontology = ConjunctiveGraph()
     ontology.load('PatientRecord-DL.owl')
     
+    # The next line fails with:
+    # AssertionError: Cannot conclude existensial set membershipHFgNRrRw3255
     network.setupDescriptionLogicProgramming(ontology)
     network.feedFactsToAdd(generateTokenSet(ontology))
     network.feedFactsToAdd(generateTokenSet(graph))
