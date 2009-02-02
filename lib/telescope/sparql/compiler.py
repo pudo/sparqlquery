@@ -93,14 +93,21 @@ class SelectCompiler(object):
     
     def compile_variables(self, variables):
         for variable in variables:
-            if isinstance(variable, URIRef):
-                namespace, fragment = defrag(variable)
-                namespace = URIRef(namespace)
-                self.namespaces.add(namespace)
-                if namespace in self.prefix_map:
-                    yield '%s:%s' % (self.prefix_map[namespace], fragment)
-                    continue
-            yield n3(variable)
+            yield ' '.join(self.compile_expression(variable))
+    
+    def compile_uri(self, uri):
+        namespace, fragment = defrag(uri)
+        namespace = URIRef(namespace)
+        self.namespaces.add(namespace)
+        if namespace in self.prefix_map:
+            return '%s:%s' % (self.prefix_map[namespace], fragment)
+        return n3(uri)
+    
+    def compile_expression(self, expression):
+        if isinstance(expression, URIRef):
+            yield self.compile_uri(expression)
+        else:
+            yield n3(expression)
     
     def compile_where(self):
         yield 'WHERE'
@@ -120,6 +127,15 @@ class SelectCompiler(object):
                 for token in self.compile_graph_pattern(pattern):
                     yield token
         yield '}'
+    
+    def compile_function(self, function):
+        operator = self.OPERATORS.get(function.operator, function.operator)
+        if isinstance(operator, URIRef) or not isinstance(operator, basestring):
+            operator = ' '.join(self.compile_expression(function.operator))
+        yield operator
+        yield '('
+        yield ', '.join(' '.join(self.compile_expression(param)) for param in function.params)
+        yield ')'
     
     def execute(self, graph):
         return graph.query(unicode(self))

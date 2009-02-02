@@ -1,28 +1,30 @@
 from operator import or_, and_, pos, neg, invert, eq, ne, lt, gt, le, ge, add, sub, mul, div
 from telescope.sparql.expressions import Expression
 
-def asc(variable):
-    return Expression(asc, variable)
-
-def desc(variable):
-    return Expression(desc, variable)
-
 class Operator(Expression):
-    def __init__(self, iri, params):
+    def __init__(self, iri, params=()):
         Expression.__init__(self, iri, None)
         self.params = tuple(params)
     
     def __call__(self, *args):
-        return self.__class__(self.iri, args)
+        return self.__class__(self.operator, args)
+    
+    def __repr__(self):
+        return "Operator(%r)" % (self.operator,)
 
 class BuiltinOperator(Operator):
     def __init__(self, name, params):
         Operator.__init__(self, None, params)
         Expression.__init__(self, name, None)
-        self.operator = name
     
     def __call__(self, *args):
-        return self.__class__(self.name, args)
+        return self.__class__(self.operator, args)
+
+def asc(variable):
+    return BuiltinOperator(asc, (variable,))
+
+def desc(variable):
+    return BuiltinOperator(desc, (variable,))
 
 class OperatorConstructor(object):
     def __init__(self, namespace=None):
