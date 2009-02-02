@@ -111,10 +111,12 @@ class SelectCompiler(object):
     
     def compile_where(self):
         yield 'WHERE'
-        yield '{'
+        if len(self.select.patterns) > 1:
+            yield '{\n'
         for graph_pattern in self.select.patterns:
             yield '\n'.join(self.compile_graph_pattern(graph_pattern))
-        yield '}'
+        if len(self.select.patterns) > 1:
+            yield '}\n'
     
     def compile_graph_pattern(self, graph_pattern):
         if graph_pattern.optional:

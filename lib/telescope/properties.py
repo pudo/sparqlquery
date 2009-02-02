@@ -1,4 +1,5 @@
 from rdflib import Namespace, Variable, Literal, URIRef
+from telescope.sparql.select import Triple
 
 __all__ = ['Term', 'Property', 'Label', 'Collection', 'Single']
 
@@ -33,7 +34,7 @@ class Term(object):
         return uri
     
     def build_triples(self, subject, object):
-        yield (subject, self.predicate, object)
+        yield Triple(subject, self.predicate, object)
 
 class Property(Term):
     def to_python(self, graph, value):
@@ -89,3 +90,4 @@ class PropertyManager(object):
             properties = properties.properties
         for key, descriptor in properties.iteritems():
             self.add_property(key, descriptor)
+

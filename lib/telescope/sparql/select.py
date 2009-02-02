@@ -121,7 +121,7 @@ class Select(object):
         return self._clone(_reduced=value, _distinct=not value and self._distinct)
     
     def execute(self, graph):
-        return graph.query(self.compile())
+        return graph.query(unicode(self.compile()))
     
     def compile(self, prefix_map=None):
         from telescope.sparql.compiler import SelectCompiler
