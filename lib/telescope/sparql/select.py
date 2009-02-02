@@ -1,7 +1,23 @@
-from telescope.sparql.expressions import Triple
-from telescope.sparql.compiler import n3
+__all__ = ['Triple', 'GraphPattern', 'pattern', 'Select']
 
-__all__ = ['GraphPattern', 'pattern', 'Select']
+class Triple(object):
+    def __init__(self, subject, predicate, object):
+        self.subject = subject
+        self.predicate = predicate
+        self.object = object
+    
+    def __iter__(self):
+        return iter((self.subject, self.predicate, self.object))
+    
+    def __repr__(self):
+        return "Triple(%r, %r, %r)" % tuple(self)
+    
+    @classmethod
+    def from_obj(cls, obj):
+        if isinstance(obj, Triple):
+            return obj
+        else:
+            return cls(*obj)
 
 class GraphPattern(object):
     def __init__(self, patterns, optional=False):
@@ -27,11 +43,6 @@ class GraphPattern(object):
             if isinstance(obj, Triple):
                 obj = [obj]
             return cls(obj, **kwargs)
-    
-    def compile(self):
-        modifier = self.optional and 'OPTIONAL ' or ''
-        patterns = ' .\n'.join(pattern.compile() for pattern in self.patterns)
-        return '%s{\n%s\n}' % (modifier, patterns)
 
 def pattern(*patterns, **kwargs):
     return GraphPattern(patterns, **kwargs)
@@ -112,11 +123,7 @@ class Select(object):
     def execute(self, graph):
         return graph.query(self.compile())
     
-    def compile(self):
-        variables = ' '.join(map(n3, self.variables))
-        if len(self.patterns) == 1:
-            patterns = self.patterns[0].compile()
-        else:
-            compiled = [pattern.compile() for pattern in self.patterns]
-            patterns = '{\n%s\n}' % '\n'.join(compiled)
-        return 'SELECT %s\nWHERE %s' % (variables, patterns)
+    def compile(self, prefix_map=None):
+        from telescope.sparql.compiler import SelectCompiler
+        return SelectCompiler(self, prefix_map)
+

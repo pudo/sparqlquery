@@ -1,4 +1,11 @@
+from operator import or_, and_, pos, neg, invert, eq, ne, lt, gt, le, ge, add, sub, mul, div
 from telescope.sparql.expressions import Expression
+
+def asc(variable):
+    return Expression(asc, variable)
+
+def desc(variable):
+    return Expression(desc, variable)
 
 class Operator(Expression):
     def __init__(self, iri, params):

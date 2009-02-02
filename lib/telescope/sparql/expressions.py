@@ -1,27 +1,4 @@
 from rdflib import URIRef
-from telescope.sparql.compiler import n3
-
-class Triple(object):
-    def __init__(self, subject, predicate, object):
-        self.subject = subject
-        self.predicate = predicate
-        self.object = object
-    
-    def __iter__(self):
-        return iter((self.subject, self.predicate, self.object))
-    
-    def __repr__(self):
-        return "Triple(%r, %r, %r)" % tuple(self)
-    
-    @classmethod
-    def from_obj(cls, obj):
-        if isinstance(obj, Triple):
-            return obj
-        else:
-            return cls(*obj)
-    
-    def compile(self):
-        return ' '.join(map(n3, self))
 
 class Expression(object):
     def __init__(self, operator, expression, lang=None, type=None):
