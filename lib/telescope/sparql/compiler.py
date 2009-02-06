@@ -1,6 +1,6 @@
 from rdflib import Literal, URIRef
 from telescope.sparql import operators
-from telescope.sparql.select import Select, Triple, GraphPattern
+from telescope.sparql.select import Select, Triple, GraphPattern, GroupGraphPattern
 
 def n3(term):
     if hasattr(term, 'n3'):
@@ -111,24 +111,29 @@ class SelectCompiler(object):
     
     def compile_where(self):
         yield 'WHERE'
-        if len(self.select.patterns) > 1:
-            yield '{\n'
-        for graph_pattern in self.select.patterns:
-            yield '\n'.join(self.compile_graph_pattern(graph_pattern))
-        if len(self.select.patterns) > 1:
-            yield '}\n'
+        yield '\n'.join(self.compile_graph_pattern(self.select._where))
     
-    def compile_graph_pattern(self, graph_pattern):
-        if graph_pattern.optional:
-            yield 'OPTIONAL'
-        yield '{'
-        for pattern in graph_pattern.patterns:
+    def compile_graph_pattern(self, graph_pattern, braces=True):
+        if isinstance(graph_pattern, GroupGraphPattern):
+            if graph_pattern.optional:
+                yield 'OPTIONAL'
+                braces = True
+        if braces:
+            yield '{'
+        patterns = list(graph_pattern.patterns)
+        while patterns:
+            pattern = patterns.pop(0)
             if isinstance(pattern, Triple):
-                yield '  %s .' % ' '.join(self.compile_variables(pattern))
+                yield ' '.join(self.compile_variables(pattern))
+                if patterns:
+                    yield '.'
             elif isinstance(pattern, GraphPattern):
-                for token in self.compile_graph_pattern(pattern):
+                for token in self.compile_graph_pattern(pattern, False):
                     yield token
-        yield '}'
+                if patterns and token != '}':
+                    yield '.'
+        if braces:
+            yield '}'
     
     def compile_function(self, function):
         operator = self.OPERATORS.get(function.operator, function.operator)
@@ -141,3 +146,4 @@ class SelectCompiler(object):
     
     def execute(self, graph):
         return graph.query(unicode(self))
+

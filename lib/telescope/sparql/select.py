@@ -1,4 +1,4 @@
-__all__ = ['Triple', 'GraphPattern', 'pattern', 'Select']
+__all__ = ['Triple', 'GraphPattern', 'GroupGraphPattern', 'pattern', 'Select']
 
 class Triple(object):
     def __init__(self, subject, predicate, object):
@@ -20,18 +20,29 @@ class Triple(object):
             return cls(*obj)
 
 class GraphPattern(object):
-    def __init__(self, patterns, optional=False):
+    def __init__(self, patterns):
         self.patterns = []
+        self.add(*patterns)
+    
+    def add(self, *patterns):
         for pattern in patterns:
             if not isinstance(pattern, GraphPattern):
                 pattern = Triple.from_obj(pattern)
             self.patterns.append(pattern)
-        self.optional = optional
     
+    def __nonzero__(self):
+        return bool(self.patterns)
+
+    def __len__(self):
+        return len(self.patterns)
+    
+    def __getitem__(self, item):
+        return self.patterns[item]
+
     def _clone(self, **kwargs):
         clone = self.__class__.__new__(self.__class__)
+        clone.__dict__.update(self.__dict__)
         clone.patterns = self.patterns[:]
-        clone.optional = self.optional
         clone.__dict__.update(kwargs)
         return clone
     
@@ -44,16 +55,18 @@ class GraphPattern(object):
                 obj = [obj]
             return cls(obj, **kwargs)
 
+class GroupGraphPattern(GraphPattern):
+    def __init__(self, patterns, optional=False):
+        GraphPattern.__init__(self, patterns)
+        self.optional = optional
+
 def pattern(*patterns, **kwargs):
-    return GraphPattern(patterns, **kwargs)
+    return GroupGraphPattern(patterns, **kwargs)
 
 class Select(object):
     def __init__(self, variables, *patterns, **kwargs):
         self.variables = list(variables)
-        if patterns:
-            self.patterns = [GraphPattern.from_obj(patterns)]
-        else:
-            self.patterns = []
+        self._where = GroupGraphPattern(patterns)
         self._distinct = kwargs.pop('distinct', False)
         self._reduced = kwargs.pop('reduced', False)
         if self._distinct and self._reduced:
@@ -84,14 +97,15 @@ class Select(object):
         clone = self.__class__.__new__(self.__class__)
         clone.__dict__.update(self.__dict__)
         clone.variables = self.variables[:]
-        clone.patterns = self.patterns[:]
+        clone._where = self._where._clone()
         clone.__dict__.update(kwargs)
         return clone
     
     def where(self, *patterns, **kwargs):
         clone = self._clone()
         if patterns:
-            clone.patterns.append(GraphPattern.from_obj(patterns, **kwargs))
+            graph_pattern = GroupGraphPattern.from_obj(patterns, **kwargs)
+            clone._where.add(graph_pattern)
         return clone
     
     def limit(self, number):
