@@ -1,0 +1,20 @@
+<rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+         xmlns:foaf="http://xmlns.com/foaf/0.1/"
+         xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#">
+
+<foaf:Person rdf:nodeID="harry">
+    <foaf:name>Harry Osborn</foaf:name>
+    <rdfs:seeAlso rdf:resource="http://www.osborn.com/harry.rdf"/>
+</foaf:Person>
+
+<foaf:Person>
+    <foaf:name>Peter Parker</foaf:name>
+    <foaf:knows rdf:nodeID="harry"/>
+    <foaf:knows>
+        <foaf:Person>
+            <foaf:name>Aunt May</foaf:name>
+        </foaf:Person>   
+    </foaf:knows>
+</foaf:Person>
+ 
+</rdf:RDF>
