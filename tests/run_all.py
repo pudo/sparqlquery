@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 import unittest
 from test_modifiers import *
 from test_select import *
