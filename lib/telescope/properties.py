@@ -1,7 +1,7 @@
 from rdflib import Namespace, Variable, Literal, URIRef
 from telescope.sparql.select import Triple
 
-__all__ = ['Term', 'Property', 'Label', 'Collection', 'Single']
+__all__ = ['Term', 'Property', 'Label']
 
 RDFS = Namespace('http://www.w3.org/2000/01/rdf-schema#')
 
@@ -12,20 +12,13 @@ class Term(object):
     
     def __get__(self, instance, owner):
         if instance is not None:
-            try:
-                instance._state
-            except AttributeError:
-                return self.default
-            else:
-                return instance._state.get(self, self.default)
+            state = instance.__dict__.get('_state', {})
+            return state.get(self, self.default)
         return self
     
     def __set__(self, instance, value):
-        try:
-            instance._state
-        except AttributeError:
-            instance._state = {}
-        instance._state[self] = value
+        state = instance.__dict__.setdefault('_state', {})
+        state[self] = value
     
     def to_python(self, graph, value):
         return value
@@ -33,7 +26,7 @@ class Term(object):
     def resolve_subject(self, graph, uri):
         return uri
     
-    def build_triples(self, subject, object):
+    def triples(self, subject, object):
         yield Triple(subject, self.predicate, object)
 
 class Property(Term):
@@ -55,12 +48,19 @@ class Label(Property):
             return self.to_python(graph, label)
         return uri
 
-class Collection(object):
-    def __init__(self, class_):
+class Relationship(Property):
+    def __init__(self, class_, predicate):
         self.class_ = class_
-
-class Single(Collection):
-    pass
+        self.predicate = predicate
+    
+    def __get__(self, instance, owner):
+        if instance is not None:
+            state = instance.__dict__.get('_state', {})
+            return state.get(self, [])
+        return self
+    
+    # def triples(self, subject, object):
+    #     pass
 
 class PropertyManager(object):
     def __init__(self, class_):
@@ -85,9 +85,7 @@ class PropertyManager(object):
         self.properties[key] = descriptor
         setattr(self.class_, key, descriptor)
     
-    def update(self, properties):
-        if isinstance(properties, PropertyManager):
-            properties = properties.properties
+    def update(self, properties, **kwargs):
+        properties = dict(properties, **kwargs)
         for key, descriptor in properties.iteritems():
             self.add_property(key, descriptor)
-

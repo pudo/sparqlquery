@@ -65,7 +65,7 @@ def pattern(*patterns, **kwargs):
 
 class Select(object):
     def __init__(self, variables, *patterns, **kwargs):
-        self.variables = list(variables)
+        self.variables = tuple(variables)
         self._where = GroupGraphPattern(patterns)
         self._distinct = kwargs.pop('distinct', False)
         self._reduced = kwargs.pop('reduced', False)
@@ -96,10 +96,12 @@ class Select(object):
     def _clone(self, **kwargs):
         clone = self.__class__.__new__(self.__class__)
         clone.__dict__.update(self.__dict__)
-        clone.variables = self.variables[:]
         clone._where = self._where._clone()
         clone.__dict__.update(kwargs)
         return clone
+    
+    def select(self, *variables):
+        return self._clone(variables=self.variables + variables)
     
     def where(self, *patterns, **kwargs):
         clone = self._clone()
