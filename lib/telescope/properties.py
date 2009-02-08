@@ -59,8 +59,10 @@ class Relationship(Property):
             return state.get(self, [])
         return self
     
-    # def triples(self, subject, object):
-    #     pass
+    def triples(self, subject, object):
+        related_mapper = self.class_._mapper
+        related_mapper.select._clone(variables=(related_mapper.identifier,))
+        
 
 class PropertyManager(object):
     def __init__(self, class_):
