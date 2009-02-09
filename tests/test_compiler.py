@@ -4,6 +4,8 @@ import unittest
 from rdflib import Variable, Namespace
 from telescope.sparql.select import Select
 from telescope.sparql.compiler import SelectCompiler
+from telescope.sparql.expressions import Expression, or_, and_
+from telescope.sparql import operators
 
 TEST = Namespace('http://www.example.com/test#')
 a, b, c, x, y, z = map(Variable, 'abcxyz')
@@ -15,16 +17,16 @@ class TestSelectCompiler(unittest.TestCase):
     def test_select_empty_graph_pattern_output(self):
         select = Select([a])
         compiler = SelectCompiler(select)
-        self.assertCompileOutputs(compiler, 'SELECT ?a WHERE { }')
+        self.assertOutputMatches(compiler.compile(), 'SELECT ?a WHERE { }')
     
     def test_select_basic_graph_pattern_output(self):
         select = Select([a]).where((a, TEST.b, 'c'))
         compiler = SelectCompiler(select)
-        self.assertCompileOutputs(compiler,
+        self.assertOutputMatches(compiler.compile(),
             'SELECT ?a WHERE { ?a <http://www.example.com/test#b> "c" }'
         )
         compiler = SelectCompiler(select.where((a, TEST.y, 'z')))
-        self.assertCompileOutputs(compiler,
+        self.assertOutputMatches(compiler.compile(),
             """SELECT ?a WHERE {
             ?a <http://www.example.com/test#b> "c" .
             ?a <http://www.example.com/test#y> "z"
@@ -34,13 +36,13 @@ class TestSelectCompiler(unittest.TestCase):
     def test_select_optional_graph_pattern_output(self):
         select = Select([a]).where((a, TEST.b, 'c'), optional=True)
         compiler = SelectCompiler(select)
-        self.assertCompileOutputs(compiler,
+        self.assertOutputMatches(compiler.compile(),
             'SELECT ?a WHERE { OPTIONAL { ?a <http://www.example.com/test#b> "c" } }'
         )
         compiler = SelectCompiler(select.where(
             (x, TEST.y, z), (z, TEST.y, a), optional=True
         ))
-        self.assertCompileOutputs(compiler,
+        self.assertOutputMatches(compiler.compile(),
             """SELECT ?a WHERE {
             OPTIONAL { ?a <http://www.example.com/test#b> "c" }
             OPTIONAL {
@@ -52,7 +54,7 @@ class TestSelectCompiler(unittest.TestCase):
     def test_select_multiple_graph_patterns_output(self):
         select = Select([a, z], (a, TEST.b, 'c')).where((a, TEST.y, z), optional=True)
         compiler = SelectCompiler(select)
-        self.assertCompileOutputs(compiler,
+        self.assertOutputMatches(compiler.compile(),
             """SELECT ?a ?z WHERE {
             ?a <http://www.example.com/test#b> "c" .
             OPTIONAL { ?a <http://www.example.com/test#y> ?z }
@@ -61,7 +63,7 @@ class TestSelectCompiler(unittest.TestCase):
         compiler = SelectCompiler(select.where(
             (x, TEST.y, z), (b, TEST.x, 'y')
         ).where((z, TEST.b, 'a'), optional=True))
-        self.assertCompileOutputs(compiler,
+        self.assertOutputMatches(compiler.compile(),
             """SELECT ?a ?z WHERE {
             ?a <http://www.example.com/test#b> "c" .
             OPTIONAL { ?a <http://www.example.com/test#y> ?z }
@@ -70,11 +72,66 @@ class TestSelectCompiler(unittest.TestCase):
             OPTIONAL { ?z <http://www.example.com/test#b> "a" }
             }"""
         )
+    def test_binary_conditional_expression_output(self):
+        compiler = SelectCompiler(None)
+        for operator in (operators.and_, operators.or_):
+            expr = operator(Expression(2), 1)
+            token = compiler.OPERATORS.get(operator)
+            self.assertOutputMatches(compiler.compile_expression(expr), '2 %s 1' % (token,))
     
-    def assertCompileOutputs(self, compiler, expected):
-        output = compiler.compile()
-        return self.assertEqual(normalize(output), normalize(expected))
+    def test_arbitrary_conditional_expression_output(self): 
+        compiler = SelectCompiler(None)
+        expr = or_(1, 2, 3, 4, 5)
+        self.assertOutputMatches(compiler.compile_expression(expr), '1 || 2 || 3 || 4 || 5')
+        expr = and_(1, 2, 3, 4, 5)
+        self.assertOutputMatches(compiler.compile_expression(expr), '1 && 2 && 3 && 4 && 5')
+    
+    def test_nested_conditional_expression_output(self):
+        compiler = SelectCompiler(None)
+        expr = and_(1, or_(2, 3))
+        self.assertOutputMatches(compiler.compile_expression(expr), '1 && 2 || 3')
 
+    def test_binary_expression_output(self):
+        compiler = SelectCompiler(None)
+        for operator in (
+            operators.eq, operators.ne, operators.lt, operators.gt,
+            operators.le, operators.ge, operators.mul, operators.div,
+            operators.add, operators.sub):
+            expr = operator(Expression(2), 1)
+            token = compiler.OPERATORS.get(operator)
+            self.assertOutputMatches(compiler.compile_expression(expr), '2 %s 1' % (token,))
+    
+    def test_unary_expression_output(self):
+        compiler = SelectCompiler(None)
+        for operator in (operators.invert, operators.pos, operators.neg):
+            expr = operator(Expression(2))
+            token = compiler.OPERATORS.get(operator)
+            self.assertOutputMatches(compiler.compile_expression(expr), '%s2' % (token,))
+    
+    def test_function_call_output(self):
+        compiler = SelectCompiler(None)
+        op = operators.Operator('sameTerm')
+        op_call = op(1, "two")
+        self.assertOutputMatches(compiler.compile_expression(op_call), 'sameTerm(1, "two")')
+
+    def test_select_single_filter_output(self):
+        select = Select([a]).filter(Expression(a) > 1)
+        compiler = SelectCompiler(select)
+        self.assertOutputMatches(compiler.compile(),
+            'SELECT ?a WHERE { FILTER (?a > 1) }'
+        )
+    
+    def test_select_multiple_filters_output(self):
+        select = Select([a]).filter(Expression(a) > 0, Expression(a) <= 5)
+        compiler = SelectCompiler(select)
+        self.assertOutputMatches(compiler.compile(),
+            'SELECT ?a WHERE { FILTER (?a > 0) . FILTER (?a <= 5) }'
+        )
+    
+    def assertOutputMatches(self, output, expected):
+        if not isinstance(output, basestring):
+            output = ' '.join(output)
+        return self.assertEqual(normalize(output), normalize(expected))
 
 if __name__ == '__main__':
     unittest.main()

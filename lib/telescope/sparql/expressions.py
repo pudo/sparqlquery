@@ -1,4 +1,13 @@
+import operator
 from rdflib import URIRef
+
+__all__ = ['Expression', 'BinaryExpression', 'ConditionalExpression', 'and_', 'or_']
+
+unary = lambda op: lambda self: Expression(self, op)
+binary = lambda op: lambda self, other: BinaryExpression(op, self, other)
+binary.r = lambda op: lambda self, other: BinaryExpression(op, other, self)
+conditional = lambda op: lambda self, other: ConditionalExpression(op, (self, other))
+conditional.r = lambda op: lambda self, other: ConditionalExpression(op, (other, self))
 
 class Expression(object):
     def __init__(self, expression, operator=None, lang=None, type=None):
@@ -29,67 +38,53 @@ class Expression(object):
     
     # Logical operators.
     
-    def __or__(self, other):
-        return BinaryExpression(operator.or_, self, other)
-    
-    def __and__(self, other):
-        return BinaryExpression(operator.and_, self, other)
+    __or__ = conditional(operator.or_)
+    __ror__ = conditional.r(operator.or_)
+    __and__ = conditional(operator.and_)
+    __rand__ = conditional.r(operator.and_)
     
     # Unary operators.
     
-    def __pos__(self):
-        return Expression(operator.pos, self)
-    
-    def __neg__(self):
-        return Expression(operator.neg, self)
-    
-    def __invert__(self):
-        return Expression(operator.invert, self)
+    __pos__ = unary(operator.pos)
+    __neg__ = unary(operator.neg)
+    __invert__ = unary(operator.invert)
     
     # Numeric operators.
     
-    def __eq__(self, other):
-        return BinaryExpression(operator.eq, self, other)
-    
-    def __ne__(self, other):
-        return BinaryExpression(operator.ne, self, other)
-    
-    def __lt__(self, other):
-        return BinaryExpression(operator.lt, self, other)
-    
-    def __gt__(self, other):
-        return BinaryExpression(operator.gt, self, other)
-    
-    def __le__(self, other):
-        return BinaryExpression(operator.le, self, other)
-    
-    def __ge__(self, other):
-        return BinaryExpression(operator.ge, self, other)
+    __eq__ = binary(operator.eq)
+    __ne__ = binary(operator.ne)
+    __lt__ = binary(operator.lt)
+    __gt__ = binary(operator.gt)
+    __le__ = binary(operator.le)
+    __ge__ = binary(operator.ge)
     
     # Additive operators.
     
-    def __add__(self, other):
-        return BinaryExpression(operator.add, self, other)
-    
-    def __sub__(self, other):
-        return BinaryExpression(operator.sub, self, other)
+    __add__ = binary(operator.add)
+    __radd__ = binary.r(operator.add)
+    __sub__ = binary(operator.sub)
     
     # Multiplicative operators.
     
-    def __mul__(self, other):
-        return BinaryExpression(operator.mul, self, other)
-    
-    def __div__(self, other):
-        return BinaryExpression(operator.div, self, other)
+    __mul__ = binary(operator.mul)
+    __rmul__ = binary.r(operator.mul)
+    __div__ = binary(operator.div)
+    __rdiv__ = binary.r(operator.div)
 
 class BinaryExpression(Expression):
     def __init__(self, operator, left, right):
-        Expression.__init__(self, operator, None)
+        Expression.__init__(self, None, operator)
         self.left = left
         self.right = right
 
-def lang(expression, language):
-    return Expression(expression, lang=language)
+class ConditionalExpression(Expression):
+    def __init__(self, operator, expressions):
+        Expression.__init__(self, None, operator)
+        self.expressions = expressions
 
-def datatype(expression, type):
-    return Expression(expression, type=type)
+def or_(*expressions):
+    return ConditionalExpression(operator.or_, expressions)
+
+def and_(*expressions):
+    return ConditionalExpression(operator.and_, expressions)
+

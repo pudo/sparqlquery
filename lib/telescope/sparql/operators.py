@@ -6,19 +6,19 @@ class Operator(object):
         self.operator = operator
     
     def __call__(self, *args):
-        return FunctionCall(self, args)
+        return FunctionCall(self.operator, args)
     
     def __repr__(self):
         return "Operator(%r)" % (self.operator,)
 
 class BinaryOperator(Operator):
     def __call__(self, left, right):
-        return BinaryExpression(self, left, right)
+        return BinaryExpression(self.operator, left, right)
 
 class FunctionCall(Expression):
     def __init__(self, operator, arg_list):
         Expression.__init__(self, None, operator)
-        self.arg_list = args
+        self.arg_list = arg_list
     
     def __repr__(self):
         return "FunctionCall(%r, %r)" % (self.operator, self.arg_list)

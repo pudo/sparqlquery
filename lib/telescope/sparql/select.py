@@ -1,4 +1,7 @@
-__all__ = ['Triple', 'GraphPattern', 'GroupGraphPattern', 'pattern', 'Select']
+from telescope.sparql.expressions import Expression, BinaryExpression
+from telescope.sparql import operators
+
+__all__ = ['Triple', 'Filter', 'GraphPattern', 'GroupGraphPattern', 'pattern', 'Select']
 
 class Triple(object):
     def __init__(self, subject, predicate, object):
@@ -19,9 +22,17 @@ class Triple(object):
         else:
             return cls(*obj)
 
+class Filter(object):
+    def __init__(self, constraint):
+        self.constraint = constraint
+
+    def __repr__(self):
+        return "Filter(%r)" % (self.constraint,)
+
 class GraphPattern(object):
     def __init__(self, patterns):
         self.patterns = []
+        self.filters = []
         self.add(*patterns)
     
     def add(self, *patterns):
@@ -29,6 +40,12 @@ class GraphPattern(object):
             if not isinstance(pattern, GraphPattern):
                 pattern = Triple.from_obj(pattern)
             self.patterns.append(pattern)
+
+    def filter(self, *filters):
+        for filter in filters:
+            if not isinstance(filter, Filter):
+                filter = Filter(filter)
+            self.filters.append(filter)
     
     def __nonzero__(self):
         return bool(self.patterns)
@@ -111,7 +128,13 @@ class Select(object):
         return clone
     
     def filter(self, *constraints, **kwargs):
-        return self._clone()
+        constraints = list(constraints)
+        for key, value in kwargs.iteritems():
+            expr = BinaryExpression(operators.eq, Variable(key), value)
+            constraints.append(expr)
+        clone = self._clone()
+        clone._where.filter(*constraints)
+        return clone
     
     def limit(self, number):
         """Return a new `Select` with LIMIT `number` applied."""

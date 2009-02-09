@@ -2,9 +2,11 @@
 import unittest
 from rdflib import Variable, Namespace
 from telescope.sparql.select import Select
+from telescope.sparql.expressions import Expression
+from telescope.sparql.operators import op
 
 TEST = Namespace('http://www.example.com/test#')
-a, b, c = map(Variable, 'abc')
+a, b, c, x, y, z = map(Variable, 'abcxyz')
 
 class TestSelectVariables(unittest.TestCase):
     def setUp(self):
@@ -38,9 +40,9 @@ class TestSelectWhere(unittest.TestCase):
         select = self.select.where()
         self.assert_(select is not self.select)
     
-    def test_method_arg_adds_clauses(self):
-        select = self.select.where(('a', TEST.b, 'c'))
-        self.assert_(select._where)
+    def test_method_args_add_clauses(self):
+        select = self.select.where(('a', TEST.b, 'c'), ('x', TEST.y, 'z'))
+        self.assert_(len(select._where[0].patterns) == 2)
     
     def test_optional_kwarg_makes_optional_pattern(self):
         select = self.select.where(('a', TEST.b, 'c'), optional=True)
@@ -53,6 +55,10 @@ class TestSelectfilter(unittest.TestCase):
     def test_method_is_generative(self):
         select = self.select.filter()
         self.assert_(select is not self.select)
+
+    def test_method_args_add_filters(self):
+        select = self.select.filter(Expression(2) > 1, Expression('z') > 'a')
+        self.assert_(len(select._where.filters) == 2)
 
 if __name__ == '__main__':
     unittest.main()

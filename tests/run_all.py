@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 import unittest
+from test_expressions import *
 from test_modifiers import *
 from test_select import *
 from test_compiler import *
