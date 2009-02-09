@@ -32,7 +32,10 @@ class SelectCompiler(object):
         operators.add: '+',
         operators.sub: '-',
         operators.asc: 'ASC',
-        operators.desc: 'DESC'
+        operators.desc: 'DESC',
+        'logical-and': '&&',
+        'logical-or': '||',
+        'RDFTerm-equal': '='
     }
     def __init__(self, select, prefix_map=None):
         self.select = select

@@ -110,6 +110,9 @@ class Select(object):
             clone._where.add(graph_pattern)
         return clone
     
+    def filter(self, *constraints, **kwargs):
+        return self._clone()
+    
     def limit(self, number):
         """Return a new `Select` with LIMIT `number` applied."""
         return self._clone(_limit=number)

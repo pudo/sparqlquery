@@ -35,17 +35,24 @@ class TestSelectWhere(unittest.TestCase):
         self.assert_(select._where)
     
     def test_method_is_generative(self):
-        select_where = self.select.where()
-        self.assert_(select_where is not self.select)
+        select = self.select.where()
+        self.assert_(select is not self.select)
     
     def test_method_arg_adds_clauses(self):
-        select_where = self.select.where(('a', TEST.b, 'c'))
-        self.assert_(select_where._where)
+        select = self.select.where(('a', TEST.b, 'c'))
+        self.assert_(select._where)
     
     def test_optional_kwarg_makes_optional_pattern(self):
-        select_where = self.select.where(('a', TEST.b, 'c'), optional=True)
-        self.assert_(select_where._where[-1].optional)
+        select = self.select.where(('a', TEST.b, 'c'), optional=True)
+        self.assert_(select._where[-1].optional)
 
+class TestSelectfilter(unittest.TestCase):
+    def setUp(self):
+        self.select = Select([])
+    
+    def test_method_is_generative(self):
+        select = self.select.filter()
+        self.assert_(select is not self.select)
 
 if __name__ == '__main__':
     unittest.main()

@@ -1,24 +1,27 @@
 from operator import or_, and_, pos, neg, invert, eq, ne, lt, gt, le, ge, add, sub, mul, div
-from telescope.sparql.expressions import Expression
+from telescope.sparql.expressions import Expression, BinaryExpression
 
-class Operator(Expression):
-    def __init__(self, iri, params=()):
-        Expression.__init__(self, iri, None)
-        self.params = tuple(params)
+class Operator(object):
+    def __init__(self, operator):
+        self.operator = operator
     
     def __call__(self, *args):
-        return self.__class__(self.operator, args)
+        return FunctionCall(self, args)
     
     def __repr__(self):
         return "Operator(%r)" % (self.operator,)
 
-class BuiltinOperator(Operator):
-    def __init__(self, name, params):
-        Operator.__init__(self, None, params)
-        Expression.__init__(self, name, None)
+class BinaryOperator(Operator):
+    def __call__(self, left, right):
+        return BinaryExpression(self, left, right)
+
+class FunctionCall(Expression):
+    def __init__(self, operator, arg_list):
+        Expression.__init__(self, None, operator)
+        self.arg_list = args
     
-    def __call__(self, *args):
-        return self.__class__(self.operator, args)
+    def __repr__(self):
+        return "FunctionCall(%r, %r)" % (self.operator, self.arg_list)
 
 def asc(variable):
     return BuiltinOperator(asc, (variable,))
@@ -36,38 +39,50 @@ class OperatorConstructor(object):
         else:
             return Operator(self._namespace[name])
     
+    def __getitem__(self, name):
+        return getattr(self, name.replace('-', '_'))
+    
     def __call__(self, namespace):
         return self.__class__(namespace)
     
     def bound(self, variable):
-        return BuiltinOperator('bound', [variable])
+        return Operator('bound')(variable)
     
     def isIRI(self, term):
-        return BuiltinOperator('isIRI', [term])
+        return Operator('isIRI')(term)
     
     def isBlank(self, term):
-        return BuiltinOperator('isBlank', [term])
+        return Operator('isBlank')(term)
     
     def isLiteral(self, term):
-        return BuiltinOperator('isLiteral', [term])
+        return Operator('isLiteral')(term)
     
     def str(self, expression):
-        return BuiltinOperator('str', [expression])
+        return Operator('str')(expression)
     
     def lang(self, literal):
-        return BuiltinOperator('lang', [literal])
+        return Operator('lang')(literal)
     
     def datatype(self, literal):
-        return BuiltinOperator('datatype', [literal])
+        return Operator('datatype')(literal)
+    
+    def logical_or(self, left, right):
+        return BinaryOperator('logical-or')(left, right)
+    
+    def logical_and(self, left, right):
+        return BinaryOperator('logical-and')(left, right)
+    
+    def RDFTerm_equal(self, term1, term2):
+        return BinaryOperator('RDFTerm-equal')(term2, term2)
     
     def sameTerm(self, term1, term2):
-        return BuiltinOperator('sameTerm', [term1, term2])
+        return Operator('sameTerm')(term1, term2)
     
     def langMatches(self, tag, range):
-        return BuiltinOperator('langMatches', [tag, range])
+        return Operator('langMatches')(tag, range)
     
     def regex(self, text, pattern, flags=None):
         params = [text, pattern] + (flags and [flags] or [])
-        return BuiltinOperator('regex', params)
+        return Operator('regex')(*params)
 
 op = OperatorConstructor()

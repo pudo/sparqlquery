@@ -1,8 +1,9 @@
 from rdflib import Namespace, Variable, Literal, URIRef
-from telescope.properties import PropertyManager
 from telescope.sparql.select import Select, Triple
+from telescope.properties import PropertyManager
+from telescope.query import Query
 
-__all__ = ['Mapper', 'mapper', 'query']
+__all__ = ['Mapper', 'mapper', 'get_mapper']
 
 RDF = Namespace('http://www.w3.org/1999/02/22-rdf-syntax-ns#')
 
@@ -48,19 +49,10 @@ class Mapper(object):
             instance = self.new_instance()
             self.bind_instance(graph, instance, data)
             yield instance
-    
-    def query(self, graph):
-        variables = map(Variable, self.class_._manager.properties)
-        triples = []
-        for name, property in self.class_._manager:
-            triples.extend(property.triples(self.identifier, Variable(name)))
-        select = self.select.select(*variables).where(*triples)
-        results = select.execute(graph)
-        return self.bind_results(graph, select, results)
 
 def mapper(class_, *args, **kwargs):
     class_._mapper = Mapper(class_, *args, **kwargs)
     return class_._mapper
 
-def query(class_, graph):
-    return class_._mapper.query(graph)
+def get_mapper(class_):
+    return class_._mapper

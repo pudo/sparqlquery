@@ -1,9 +1,9 @@
 from rdflib import URIRef
 
 class Expression(object):
-    def __init__(self, operator, expression, lang=None, type=None):
-        self.operator = operator
+    def __init__(self, expression, operator=None, lang=None, type=None):
         self.expression = expression
+        self.operator = operator
         self.language = lang
         self.datatype = type
     
@@ -89,7 +89,7 @@ class BinaryExpression(Expression):
         self.right = right
 
 def lang(expression, language):
-    return Expression(None, expression, language)
+    return Expression(expression, lang=language)
 
 def datatype(expression, type):
-    return Expression(None, expression, type=type)
+    return Expression(expression, type=type)
