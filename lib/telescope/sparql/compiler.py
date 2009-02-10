@@ -6,172 +6,194 @@ from telescope.sparql.operators import FunctionCall
 
 XSD = Namespace('http://www.w3.org/2001/XMLSchema#')
 
-
-def literal(term):
-    if not hasattr(term, 'n3'):
-        return literal(Literal(term))
-    elif isinstance(term, Literal):
-        if term.datatype in (XSD.int, XSD.float):
-            return unicode(term)
-    return term.n3()
-
 def defrag(uri):
     if '#' in uri:
         namespace, fragment = uri.split('#', 1)
         return ('%s#' % namespace, fragment)
     return (uri, None)
 
-class SelectCompiler(object):
-    PRECEDENCE = {
-        operators.or_: 0,
-        operators.and_: 1,
-        operators.eq: 2,
-        operators.ne: 2,
-        operators.lt: 2,
-        operators.gt: 2,
-        operators.le: 2,
-        operators.ge: 2,
-        operators.add: 3,
-        operators.sub: 3,
-        operators.mul: 4,
-        operators.div: 4,
-        operators.pos: 5,
-        operators.neg: 5,
-        operators.invert: 5,
-        'logical-and': 1,
-        'logical-or': 0,
-        'RDFTerm-equal': 2
-    }
-    OPERATORS = {
-        operators.and_: '&&',
-        operators.or_: '||',
-        operators.invert: '!',
-        operators.pos: '+',
-        operators.neg: '-',
-        operators.eq: '=',
-        operators.ne: '!=',
-        operators.lt: '<',
-        operators.gt: '>',
-        operators.le: '<=',
-        operators.ge: '>=',
-        operators.mul: '*',
-        operators.div: '/',
-        operators.add: '+',
-        operators.sub: '-',
-        operators.asc: 'ASC',
-        operators.desc: 'DESC',
-        'logical-and': '&&',
-        'logical-or': '||',
-        'RDFTerm-equal': '='
-    }
-    def __init__(self, select, prefix_map=None):
-        self.select = select
+class Compiler(object):
+    def __init__(self, prefix_map=None):
         if prefix_map is None:
             prefix_map = {}
         self.prefix_map = prefix_map
-        self.namespaces = set([])
-        self._string = None
-    
-    def __unicode__(self):
-        if self._string is None:
-            self.compile()
-        return self._string
-    
-    def compile(self):
-        clauses = []
-        clauses.append(' '.join(self.compile_select()))
-        clauses.append(' '.join(self.compile_where()))
-        clauses[:0] = self.compile_prefixes()
-        self._string = '\n'.join(clauses)
-        return self._string
-    
-    def compile_prefix(self, namespace, prefix):
-        yield 'PREFIX'
-        yield '%s:' % (prefix,)
-        yield literal(namespace)
-    
-    def compile_prefixes(self):
-        for namespace, prefix in self.prefix_map.iteritems():
-            yield ' '.join(self.compile_prefix(namespace, prefix))
-    
-    def compile_select(self):
-        yield 'SELECT'
-        yield ' '.join(self.compile_select_modifiers())
-        if '*' in self.select.variables:
-            yield '*'
-        else:
-            yield ' '.join(self.compile_variables(self.select.variables))
-        yield ' '.join(self.compile_solution_modifiers())
-    
-    def compile_select_modifiers(self):
-        if self.select._distinct:
-            yield self.OPERATORS[Select.distinct]
-        elif self.select._reduced:
-            yield self.OPERATORS[Select.reduced]
-    
-    def compile_solution_modifiers(self):
-        yield ' '.join(self.compile_order_by())
-        if self.select._limit is not None:
-            yield 'LIMIT %d' % (self.select._limit,)
-        if self.select._offset not in (0, None):
-            yield 'OFFSET %d' % (self.select._offset,)
-    
-    def compile_order_by(self):
-        if self.select._order_by:
-            yield 'ORDER BY'
-            yield ' '.join(self.compile_variables(self.select._order_by))
-    
-    def compile_variables(self, variables):
-        for variable in variables:
-            yield ' '.join(self.compile_expression(variable))
-    
-    def compile_uri(self, uri):
+
+    def uri(self, term):
         namespace, fragment = defrag(uri)
         namespace = URIRef(namespace)
-        self.namespaces.add(namespace)
-        if namespace in self.prefix_map:
-            return '%s:%s' % (self.prefix_map[namespace], fragment)
-        return literal(uri)
-    
-    def compile_operator(self, operator):
-        return self.OPERATORS.get(operator, unicode(operator))
-
-    def compile_expression(self, expression, precedence=0):
-        if isinstance(expression, URIRef):
-            yield self.compile_uri(expression)
-        elif isinstance(expression, ConditionalExpression):
-            operator = self.compile_operator(expression.operator)
-            expressions = iter(expression.expressions)
-            for expr in expressions:
-                yield ' '.join(self.compile_expression(expr))
-                break
-            for expr in expressions:
-                yield operator
-                yield ' '.join(self.compile_expression(expr))
-        elif isinstance(expression, BinaryExpression):
-            yield ' '.join(self.compile_expression(expression.left))
-            yield self.OPERATORS.get(expression.operator, unicode(expression.operator))
-            yield ' '.join(self.compile_expression(expression.right))
-        elif isinstance(expression, FunctionCall):
-            function = self.OPERATORS.get(expression.operator, unicode(expression.operator))
-            if isinstance(function, URIRef):
-                function = self.compile_uri(function)
-            arg_list = [' '.join(self.compile_expression(arg)) for arg in expression.arg_list]
-            yield '%s(%s)' % (function, ', '.join(arg_list))
-        elif isinstance(expression, Expression):
-            if expression.operator:
-                operator = self.OPERATORS.get(expression.operator, unicode(expression.operator))
-            else:
-                operator = ''
-            yield '%s%s' % (operator, ' '.join(self.compile_expression(expression.expression)))
+        try:
+            prefix = self.prefix_map[namespace]
+        except KeyError:
+            return self.term(uri)
         else:
-            yield literal(expression)
+            return '%s:%s' % (prefix, fragment)
     
-    def compile_where(self):
+    def term(self, term):
+        if not hasattr(term, 'n3'):
+            return self.term(Literal(term))
+        elif isinstance(term, Literal):
+            if term.datatype in (XSD.int, XSD.float):
+                return unicode(term)
+        return term.n3()
+
+class ExpressionCompiler(Compiler):
+    PRECEDENCE = {
+        operators.or_: 0, 'logical-or': 0,
+        operators.and_: 1, 'logical-and': 1,
+        operators.eq: 2, 'RDFTerm-equal': 2, operators.ne: 2,
+        operators.lt: 2, operators.gt: 2, operators.le: 2, operators.ge: 2,
+        operators.add: 3, operators.sub: 3, operators.mul: 4, operators.div: 4,
+        operators.pos: 5, operators.neg: 5, operators.invert: 5,
+        None: 6
+    }
+    OPERATORS = {
+        operators.or_: '||', 'logical-or': '||',
+        operators.and_: '&&', 'logical-and': '&&',
+        operators.eq: '=', 'RDFTerm-equal': '=', operators.ne: '!=',
+        operators.lt: '<', operators.gt: '>',
+        operators.le: '<=', operators.ge: '>=',
+        operators.add: '+', operators.sub: '-',
+        operators.mul: '*', operators.div: '/',
+        operators.pos: '+', operators.neg: '-', operators.invert: '!',
+    }
+    
+    def operator(self, expression):
+        operator = expression.operator
+        if not isinstance(operator, URIRef):
+            return self.OPERATORS.get(operator, unicode(operator))
+        else:
+            return self.uri(operator)
+    
+    def precedence_lt(self, a, b):
+        if isinstance(a, Expression):
+            a_precedence = self.PRECEDENCE.get(a.operator)
+        else:
+            a_precedence = self.PRECEDENCE[None]
+        if isinstance(b, Expression):
+            b_precedence = self.PRECEDENCE.get(b.operator)
+        else:
+            b_precedence = self.PRECEDENCE[None]
+        return a_precedence < b_precedence
+    
+    def bracketed(self, expression):
+        yield '('
+        yield self.compile(expression, False)
+        yield ')'
+    
+    def conditional(self, expression):
+        for expr in expression.expressions:
+            try:
+                operator
+            except NameError:
+                operator = self.operator(expression)
+            else:
+                yield operator
+            bracketed = self.precedence_lt(expr, expression)
+            yield self.compile(expr, bracketed)
+    
+    def binary(self, expression):
+        left_bracketed = self.precedence_lt(expression.left, expression)
+        right_bracketed = self.precedence_lt(expression.right, expression)
+        yield self.compile(expression.left, left_bracketed)
+        yield self.operator(expression)
+        yield self.compile(expression.right, right_bracketed)
+    
+    def function(self, expression):
+        yield self.operator(expression)
+        yield '('
+        yield ', '.join(self.compile(arg) for arg in expression.arg_list)
+        yield ')'
+    
+    def unary(self, expression):
+        if expression.operator:
+            yield self.operator(expression)
+        yield self.compile(expression.expression)
+    
+    def compile(self, expression, bracketed=False):
+        if not bracketed:
+            if isinstance(expression, ConditionalExpression):
+                return ' '.join(self.conditional(expression))
+            elif isinstance(expression, BinaryExpression):
+                return ' '.join(self.binary(expression))
+            elif isinstance(expression, FunctionCall):
+                return ''.join(self.function(expression))
+            elif isinstance(expression, Expression):
+                return ''.join(self.unary(expression))
+            else:
+                return self.term(expression)
+        else:
+            return ''.join(self.bracketed(expression))
+
+class SelectCompiler(Compiler):
+    EXPRESSION_COMPILER = ExpressionCompiler()
+    
+    def expression(self, expression, bracketed=False):
+        yield self.EXPRESSION_COMPILER.compile(expression, bracketed)
+    
+    def compile(self, select):
+        return '\n'.join(self.clauses(select))
+    
+    def clauses(self, select):
+        for prefix in self.prefixes():
+            yield prefix
+        yield ' '.join(self.select(select))
+        yield ' '.join(self.where(select))
+        yield ' '.join(self.order_by(select))
+        yield ' '.join(self.limit(select))
+        yield ' '.join(self.offset(select))
+    
+    def prefixes(self):
+        for namespace, prefix in self.prefix_map.iteritems():
+            yield ' '.join(self.prefix(prefix, namespace))
+    
+    def prefix(self, prefix, namespace):
+        yield 'PREFIX'
+        yield '%s:' % (prefix,)
+        yield self.term(namespace)
+    
+    def select(self, select):
+        yield 'SELECT'
+        yield ' '.join(self.unique(select))
+        yield ' '.join(self.projection(select))
+    
+    def unique(self, select):
+        if select._distinct:
+            yield 'DISTINCT'
+        elif select._reduced:
+            yield 'REDUCED'
+    
+    def limit(self, select):
+        if select._limit is not None:
+            yield 'LIMIT %d' % (select._limit,)
+    
+    def offset(self, select):
+        if select._offset not in (0, None):
+            yield 'OFFSET %d' % (select._offset,)
+    
+    def order_by(self, select):
+        if select._order_by:
+            yield 'ORDER BY'
+            for expression in select._order_by:
+                yield self.expression(expression)
+    
+    def projection(self, select):
+        if '*' in select.variables:
+            yield '*'
+        else:
+            for variable in select.variables:
+                yield self.term(variable)
+    
+    def where(self, select):
         yield 'WHERE'
-        yield '\n'.join(self.compile_graph_pattern(self.select._where))
+        yield '\n'.join(self.graph_pattern(select._where))
     
-    def compile_graph_pattern(self, graph_pattern, braces=True):
+    def triple(self, triple):
+        subject, predicate, object = triple
+        yield self.term(subject)
+        yield self.term(predicate)
+        yield self.term(object)
+    
+    def graph_pattern(self, graph_pattern, braces=True):
         if isinstance(graph_pattern, GroupGraphPattern):
             if graph_pattern.optional:
                 yield 'OPTIONAL'
@@ -183,29 +205,25 @@ class SelectCompiler(object):
         while patterns:
             pattern = patterns.pop(0)
             if isinstance(pattern, Triple):
-                yield ' '.join(self.compile_variables(pattern))
+                yield ' '.join(self.triple(pattern))
                 if patterns or filters:
                     yield '.'
             elif isinstance(pattern, GraphPattern):
-                for token in self.compile_graph_pattern(pattern, False):
+                token = None
+                for token in self.graph_pattern(pattern, False):
                     yield token
                 if token != '}' and (patterns or filters):
                     yield '.'
         while filters:
             filter = filters.pop(0)
-            yield ' '.join(self.compile_filter(filter))
+            yield ' '.join(self.filter(filter))
             if filters:
                 yield '.'
         if braces:
             yield '}'
     
-    def compile_filter(self, filter):
+    def filter(self, filter):
         yield 'FILTER'
-        if isinstance(filter.constraint, BinaryExpression):
-            yield '(%s)' % ' '.join(self.compile_expression(filter.constraint))
-        else:
-            yield ' '.join(self.compile_expression(filter.constraint))
-
-    def execute(self, graph):
-        return graph.query(unicode(self))
-
+        bracketed = isinstance(filter.constraint,
+            (ConditionalExpression, BinaryExpression))
+        yield ' '.join(self.expression(filter.constraint, bracketed))

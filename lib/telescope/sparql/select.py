@@ -167,5 +167,6 @@ class Select(object):
     
     def compile(self, prefix_map=None):
         from telescope.sparql.compiler import SelectCompiler
-        return SelectCompiler(self, prefix_map)
+        compiler = SelectCompiler(prefix_map)
+        return compiler.compile(self)
 

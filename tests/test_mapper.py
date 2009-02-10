@@ -59,6 +59,7 @@ class TestMappedProperties(unittest.TestCase):
     
     def test_instance_has_id(self):
         person = list(self.session.query(self.Person))[0]
+        self.assert_(getattr(person, '_id', None) is not None)
     
     def test_instance_id_is_bnode(self):
         person = list(self.session.query(self.Person))[0]
