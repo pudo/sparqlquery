@@ -8,7 +8,7 @@ from telescope.sparql.operators import op
 TEST = Namespace('http://www.example.com/test#')
 a, b, c, x, y, z = map(Variable, 'abcxyz')
 
-class TestSelectVariables(unittest.TestCase):
+class TestProjectVariables(unittest.TestCase):
     def setUp(self):
         self.select = Select([a])
     
@@ -16,12 +16,12 @@ class TestSelectVariables(unittest.TestCase):
         self.assert_(a in self.select.variables)
     
     def test_method_is_generative(self):
-        select = self.select.select(b)
+        select = self.select.project(b)
         self.assert_(select is not self.select)
     
-    def test_method_args_add_variables(self):
-        select = self.select.select(b, c)
-        self.assert_(a in select.variables)
+    def test_method_args_project_variables(self):
+        select = self.select.project(b, c)
+        self.assert_(a not in select.variables)
         self.assert_(b in select.variables)
         self.assert_(c in select.variables)
 

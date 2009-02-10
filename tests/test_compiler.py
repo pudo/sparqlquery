@@ -82,21 +82,21 @@ class TestSelectCompiler(unittest.TestCase):
         )
     
     def test_binary_conditional_expression_output(self):
-        compiler = self.compiler.EXPRESSION_COMPILER
+        compiler = self.compiler.expression_compiler
         for operator in (operators.and_, operators.or_):
             expr = operator(Expression(2), 1)
             token = compiler.OPERATORS.get(operator)
             self.assertEquivalent(compiler.compile(expr), '2 %s 1' % (token,))
     
     def test_arbitrary_conditional_expression_output(self): 
-        compiler = self.compiler.EXPRESSION_COMPILER
+        compiler = self.compiler.expression_compiler
         expr = or_(1, 2, 3, 4, 5)
         self.assertEquivalent(compiler.compile(expr), '1 || 2 || 3 || 4 || 5')
         expr = and_(1, 2, 3, 4, 5)
         self.assertEquivalent(compiler.compile(expr), '1 && 2 && 3 && 4 && 5')
     
     def test_nested_conditional_expression_output(self):
-        compiler = self.compiler.EXPRESSION_COMPILER
+        compiler = self.compiler.expression_compiler
         expr = and_(1, or_(2, 3))
         self.assertEquivalent(compiler.compile(expr), '1 && (2 || 3)')
         expr = or_(1, and_(2, 3))
@@ -105,7 +105,7 @@ class TestSelectCompiler(unittest.TestCase):
         self.assertEquivalent(compiler.compile(expr), '1 || (2 || 3) && 4 && (5 || 6)')
     
     def test_binary_expression_output(self):
-        compiler = self.compiler.EXPRESSION_COMPILER
+        compiler = self.compiler.expression_compiler
         for operator in (
             operators.eq, operators.ne, operators.lt, operators.gt,
             operators.le, operators.ge, operators.mul, operators.div,
@@ -115,14 +115,14 @@ class TestSelectCompiler(unittest.TestCase):
             self.assertEquivalent(compiler.compile(expr), '2 %s 1' % (token,))
     
     def test_unary_expression_output(self):
-        compiler = self.compiler.EXPRESSION_COMPILER
+        compiler = self.compiler.expression_compiler
         for operator in (operators.invert, operators.pos, operators.neg):
             expr = operator(Expression(2))
             token = compiler.OPERATORS.get(operator)
             self.assertEquivalent(compiler.compile(expr), '%s2' % (token,))
     
     def test_function_call_output(self):
-        compiler = self.compiler.EXPRESSION_COMPILER
+        compiler = self.compiler.expression_compiler
         op = operators.Operator('sameTerm')
         op_call = op(1, "two")
         self.assertEquivalent(compiler.compile(op_call), 'sameTerm(1, "two")')

@@ -39,6 +39,10 @@ class Expression(object):
         """Emulates ^^type."""
         return self._clone(datatype=datatype)
     
+    def compile(self, prefix_map=None):
+        from telescope.sparql.compiler import ExpressionCompiler
+        return ExpressionCompiler(prefix_map).compile(self)
+
     # Special operators.
     
     def __pow__(self, datatype):
@@ -86,10 +90,17 @@ class BinaryExpression(Expression):
         self.left = left
         self.right = right
 
+    def __repr__(self):
+        return "BinaryExpression(%r, %r, %r)" % (self.operator, self.left, self.right)
+
 class ConditionalExpression(Expression):
     def __init__(self, operator, expressions):
         Expression.__init__(self, None, operator)
         self.expressions = expressions
+
+    def __repr__(self):
+        return "ConditionalExpression(%r, %r)" % (self.operator,
+                self.expressions)
 
 def or_(*expressions):
     return ConditionalExpression(operator.or_, expressions)

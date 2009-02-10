@@ -15,6 +15,9 @@ def defrag(uri):
         namespace, fragment = uri.rsplit('/', 1)
         return ('%s/' % namespace, fragment)
 
+def join(tokens, sep=' '):
+    return sep.join([token for token in tokens if token])
+
 class Compiler(object):
     def __init__(self, prefix_map=None):
         if prefix_map is None:
@@ -138,22 +141,24 @@ class ExpressionCompiler(Compiler):
             return ''.join(self.bracketed(expression))
 
 class SelectCompiler(Compiler):
-    EXPRESSION_COMPILER = ExpressionCompiler()
+    def __init__(self, prefix_map=None):
+        Compiler.__init__(self, prefix_map)
+        self.expression_compiler = ExpressionCompiler(self.prefix_map)
     
     def expression(self, expression, bracketed=False):
-        yield self.EXPRESSION_COMPILER.compile(expression, bracketed)
+        yield self.expression_compiler.compile(expression, bracketed)
     
     def compile(self, select):
-        return '\n'.join(self.clauses(select))
+        return join(self.clauses(select), '\n')
     
     def clauses(self, select):
         for prefix in self.prefixes():
             yield prefix
-        yield ' '.join(self.select(select))
-        yield ' '.join(self.where(select))
-        yield ' '.join(self.order_by(select))
-        yield ' '.join(self.limit(select))
-        yield ' '.join(self.offset(select))
+        yield join(self.select(select))
+        yield join(self.where(select))
+        yield join(self.order_by(select))
+        yield join(self.limit(select))
+        yield join(self.offset(select))
     
     def prefixes(self):
         for namespace, prefix in self.prefix_map.iteritems():
@@ -166,8 +171,8 @@ class SelectCompiler(Compiler):
     
     def select(self, select):
         yield 'SELECT'
-        yield ' '.join(self.unique(select))
-        yield ' '.join(self.projection(select))
+        yield join(self.unique(select))
+        yield join(self.projection(select))
     
     def unique(self, select):
         if select._distinct:
@@ -198,7 +203,7 @@ class SelectCompiler(Compiler):
     
     def where(self, select):
         yield 'WHERE'
-        yield '\n'.join(self.graph_pattern(select._where))
+        yield join(self.graph_pattern(select._where))
     
     def triple(self, triple):
         subject, predicate, object = triple
@@ -218,7 +223,7 @@ class SelectCompiler(Compiler):
         while patterns:
             pattern = patterns.pop(0)
             if isinstance(pattern, Triple):
-                yield ' '.join(self.triple(pattern))
+                yield join(self.triple(pattern))
                 if patterns or filters:
                     yield '.'
             elif isinstance(pattern, UnionGraphPattern):
@@ -229,7 +234,7 @@ class SelectCompiler(Compiler):
                         union_sep = 'UNION'
                     else:
                         yield union_sep
-                    yield ' '.join(self.graph_pattern(union_pattern, True))
+                    yield join(self.graph_pattern(union_pattern, True))
                 del union_sep
             elif isinstance(pattern, GraphPattern):
                 token = None
@@ -249,4 +254,4 @@ class SelectCompiler(Compiler):
         yield 'FILTER'
         bracketed = isinstance(filter.constraint,
             (ConditionalExpression, BinaryExpression))
-        yield ' '.join(self.expression(filter.constraint, bracketed))
+        yield join(self.expression(filter.constraint, bracketed))

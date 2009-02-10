@@ -99,11 +99,18 @@ class VariableExpressionConstructor(object):
     def __getitem__(self, name):
         return Expression(Variable(name))
 
+def to_variable(expression):
+    while isinstance(expression, Expression):
+        expression = expression.expression
+    if expression and not isinstance(expression, Variable):
+        expression = Variable(expression)
+    return expression
+
 v = VariableExpressionConstructor()
 
 class Select(object):
     def __init__(self, variables, *patterns, **kwargs):
-        self.variables = tuple(variables)
+        self.variables = tuple(map(to_variable, variables))
         self._where = GroupGraphPattern(patterns)
         self._distinct = kwargs.pop('distinct', False)
         self._reduced = kwargs.pop('reduced', False)
@@ -138,8 +145,19 @@ class Select(object):
         clone.__dict__.update(kwargs)
         return clone
     
-    def select(self, *variables):
-        return self._clone(variables=self.variables + variables)
+    def project(self, *variables, **kwargs):
+        add = kwargs.pop('add', False)
+        project_vars = []
+        for variable in variables:
+            if isinstance(variable, (Expression, Variable, basestring)):
+                vars = [to_variable(variable)]
+            else:
+                vars = map(to_variable, variable)
+            project_vars.extend(vars)
+        project_vars = tuple(project_vars)
+        if add:
+            project_vars = self.variables + project_vars
+        return self._clone(variables=project_vars)
     
     def where(self, *patterns, **kwargs):
         clone = self._clone()
