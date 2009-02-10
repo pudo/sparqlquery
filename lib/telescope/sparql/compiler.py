@@ -51,6 +51,12 @@ class Compiler(object):
                 return unicode(term)
         return term.n3()
 
+    def triple(self, triple):
+        subject, predicate, object = triple
+        yield self.term(subject)
+        yield self.term(predicate)
+        yield self.term(object)
+
 class ExpressionCompiler(Compiler):
     PRECEDENCE = {
         operators.or_: 0, 'logical-or': 0,
@@ -204,12 +210,6 @@ class SelectCompiler(Compiler):
     def where(self, select):
         yield 'WHERE'
         yield join(self.graph_pattern(select._where))
-    
-    def triple(self, triple):
-        subject, predicate, object = triple
-        yield self.term(subject)
-        yield self.term(predicate)
-        yield self.term(object)
     
     def graph_pattern(self, graph_pattern, braces=True):
         if isinstance(graph_pattern, GroupGraphPattern):
