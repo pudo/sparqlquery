@@ -8,5 +8,5 @@ setup(
     description="Observe SPARQLing RDF constellations through Python objects.",
     url='http://code.google.com/p/telescope/',
     packages=find_packages(),
-    install_requires=['rdflib<3a', 'FuXi']
+    install_requires=['rdflib<3a']
 )
