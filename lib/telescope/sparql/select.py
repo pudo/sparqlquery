@@ -151,8 +151,7 @@ class Select(object):
     def filter(self, *constraints, **kwargs):
         constraints = list(constraints)
         for key, value in kwargs.iteritems():
-            expr = BinaryExpression(operators.eq, Variable(key), value)
-            constraints.append(expr)
+            constraints.append(v[key] == value)
         clone = self._clone()
         clone._where.filter(*constraints)
         return clone
