@@ -58,7 +58,7 @@ class TestSelectfilter(unittest.TestCase):
 
     def test_method_args_add_filters(self):
         select = self.select.filter(Expression(2) > 1, Expression('z') > 'a')
-        self.assert_(len(select._where.filters) == 2)
+        self.assert_(select._where.filters)
 
 if __name__ == '__main__':
     unittest.main()

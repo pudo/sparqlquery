@@ -26,12 +26,6 @@ class FunctionCall(Expression):
     def __repr__(self):
         return "FunctionCall(%r, %r)" % (self.operator, self.arg_list)
 
-def asc(variable):
-    return BuiltinOperator(asc, (variable,))
-
-def desc(variable):
-    return BuiltinOperator(desc, (variable,))
-
 class OperatorConstructor(object):
     def __init__(self, namespace=None):
         self._namespace = namespace
@@ -90,3 +84,5 @@ class OperatorConstructor(object):
 
 op = OperatorConstructor()
 fn = op(FN)
+asc = Operator('ASC')
+desc = Operator('DESC')

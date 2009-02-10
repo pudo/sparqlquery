@@ -123,7 +123,7 @@ class TestSelectCompiler(unittest.TestCase):
     def test_select_multiple_filters_output(self):
         select = Select([a]).filter(Expression(a) > 0, Expression(a) <= 5)
         self.assertEquivalent(self.compiler.compile(select),
-            'SELECT ?a WHERE { FILTER (?a > 0) . FILTER (?a <= 5) }'
+            'SELECT ?a WHERE { FILTER (?a > 0 && ?a <= 5) }'
         )
     
     def assertEquivalent(self, output, expected):

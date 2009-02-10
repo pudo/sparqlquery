@@ -1,4 +1,4 @@
-from telescope.sparql.expressions import Expression, BinaryExpression
+from telescope.sparql.expressions import Expression, BinaryExpression, and_
 from telescope.sparql import operators
 
 __all__ = ['Triple', 'Filter', 'GraphPattern', 'GroupGraphPattern', 'pattern', 'Select']
@@ -41,11 +41,8 @@ class GraphPattern(object):
                 pattern = Triple.from_obj(pattern)
             self.patterns.append(pattern)
     
-    def filter(self, *filters):
-        for filter in filters:
-            if not isinstance(filter, Filter):
-                filter = Filter(filter)
-            self.filters.append(filter)
+    def filter(self, *expressions):
+        self.filters.append(Filter(and_(*expressions)))
     
     def __nonzero__(self):
         return bool(self.patterns)
