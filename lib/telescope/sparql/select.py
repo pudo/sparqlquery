@@ -1,8 +1,9 @@
+from rdflib import Variable
 from telescope.sparql.expressions import Expression, BinaryExpression, and_
 from telescope.sparql import operators
 
 __all__ = ['Triple', 'Filter', 'GraphPattern', 'GroupGraphPattern',
-           'UnionGraphPattern', 'union', 'graph_pattern', 'Select']
+           'UnionGraphPattern', 'union', 'pattern', 'Select', 'v']
 
 class Triple(object):
     def __init__(self, subject, predicate, object):
@@ -88,8 +89,17 @@ class UnionGraphPattern(GraphPattern):
 def union(*graph_patterns):
     return UnionGraphPattern(map(GraphPattern.from_obj, graph_patterns))
 
-def graph_pattern(*patterns, **kwargs):
+def pattern(*patterns, **kwargs):
     return GroupGraphPattern(patterns, **kwargs)
+
+class VariableExpressionConstructor(object):
+    def __getattr__(self, name):
+        return Expression(Variable(name))
+
+    def __getitem__(self, name):
+        return Expression(Variable(name))
+
+v = VariableExpressionConstructor()
 
 class Select(object):
     def __init__(self, variables, *patterns, **kwargs):
@@ -173,8 +183,8 @@ class Select(object):
         """
         return self._clone(_reduced=value, _distinct=not value and self._distinct)
     
-    def execute(self, graph):
-        return graph.query(unicode(self.compile()))
+    def execute(self, graph, prefix_map=None):
+        return graph.query(unicode(self.compile(prefix_map)))
     
     def compile(self, prefix_map=None):
         from telescope.sparql.compiler import SelectCompiler

@@ -11,7 +11,9 @@ def defrag(uri):
     if '#' in uri:
         namespace, fragment = uri.split('#', 1)
         return ('%s#' % namespace, fragment)
-    return (uri, None)
+    else:
+        namespace, fragment = uri.rsplit('/', 1)
+        return ('%s/' % namespace, fragment)
 
 class Compiler(object):
     def __init__(self, prefix_map=None):
@@ -32,10 +34,15 @@ class Compiler(object):
     def term(self, term, use_prefix=True):
         if term is None:
             return RDF.nil
-        elif use_prefix and isinstance(term, URIRef):
-            return self.uri(term)
+        elif isinstance(term, Expression):
+            if term.operator:
+                raise RuntimeError("Found expression with operator; term expected.")
+            else:
+                return self.term(term.expression)
         elif not hasattr(term, 'n3'):
             return self.term(Literal(term))
+        elif use_prefix and isinstance(term, URIRef):
+            return self.uri(term)
         elif isinstance(term, Literal):
             if term.datatype in (XSD.int, XSD.float):
                 return unicode(term)

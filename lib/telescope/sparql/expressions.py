@@ -16,6 +16,15 @@ class Expression(object):
         self.language = lang
         self.datatype = type
     
+    def __repr__(self):
+        expression = self.expression
+        if hasattr(expression, 'n3'):
+            expression = expression.n3()
+        if self.operator:
+            return "Expression(%r, %r)" % (expression, self.operator)
+        else:
+            return "Expression(%r)" % (expression,)
+
     def _clone(self, **kwargs):
         clone = self.__class__.__new__(self.__class__)
         clone.__dict__.update(self.__dict__)
