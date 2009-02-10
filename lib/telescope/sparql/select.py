@@ -1,7 +1,8 @@
 from telescope.sparql.expressions import Expression, BinaryExpression, and_
 from telescope.sparql import operators
 
-__all__ = ['Triple', 'Filter', 'GraphPattern', 'GroupGraphPattern', 'pattern', 'Select']
+__all__ = ['Triple', 'Filter', 'GraphPattern', 'GroupGraphPattern',
+           'UnionGraphPattern', 'union', 'graph_pattern', 'Select']
 
 class Triple(object):
     def __init__(self, subject, predicate, object):
@@ -53,6 +54,12 @@ class GraphPattern(object):
     def __getitem__(self, item):
         return self.patterns[item]
     
+    def __or__(self, other):
+        return UnionGraphPattern([self, GraphPattern.from_obj(other)])
+    
+    def __ror__(self, other):
+        return UnionGraphPattern([GraphPattern.from_obj(other), self])
+    
     def _clone(self, **kwargs):
         clone = self.__class__.__new__(self.__class__)
         clone.__dict__.update(self.__dict__)
@@ -74,7 +81,14 @@ class GroupGraphPattern(GraphPattern):
         GraphPattern.__init__(self, patterns)
         self.optional = optional
 
-def pattern(*patterns, **kwargs):
+class UnionGraphPattern(GraphPattern):
+    def __init__(self, patterns):
+        GraphPattern.__init__(self, patterns)
+
+def union(*graph_patterns):
+    return UnionGraphPattern(map(GraphPattern.from_obj, graph_patterns))
+
+def graph_pattern(*patterns, **kwargs):
     return GroupGraphPattern(patterns, **kwargs)
 
 class Select(object):

@@ -2,7 +2,7 @@
 import re
 import unittest
 from rdflib import Variable, Namespace
-from telescope.sparql.select import Select
+from telescope.sparql.select import Select, union
 from telescope.sparql.compiler import SelectCompiler
 from telescope.sparql.expressions import Expression, or_, and_
 from telescope.sparql import operators
@@ -35,7 +35,7 @@ class TestSelectCompiler(unittest.TestCase):
             ?a <http://www.example.com/test#y> "z"
             }"""
         )
-
+    
     def test_select_optional_graph_pattern_output(self):
         select = Select([a]).where((a, TEST.b, 'c'), optional=True)
         self.assertEquivalent(self.compiler.compile(select),
@@ -72,6 +72,15 @@ class TestSelectCompiler(unittest.TestCase):
             }"""
         )
     
+    def test_select_union_graph_pattern_output(self):
+        select = Select([a]).where(union([(a, TEST.b, 'c')], [(a, TEST.y, 'z')]))
+        self.assertEquivalent(self.compiler.compile(select),
+            """SELECT ?a WHERE {
+            { ?a <http://www.example.com/test#b> "c" } UNION
+            { ?a <http://www.example.com/test#y> "z" }
+            }"""
+        )
+    
     def test_binary_conditional_expression_output(self):
         compiler = self.compiler.EXPRESSION_COMPILER
         for operator in (operators.and_, operators.or_):
@@ -90,6 +99,10 @@ class TestSelectCompiler(unittest.TestCase):
         compiler = self.compiler.EXPRESSION_COMPILER
         expr = and_(1, or_(2, 3))
         self.assertEquivalent(compiler.compile(expr), '1 && (2 || 3)')
+        expr = or_(1, and_(2, 3))
+        self.assertEquivalent(compiler.compile(expr), '1 || 2 && 3')
+        expr = or_(1, and_(or_(2, 3), 4, or_(5, 6)))
+        self.assertEquivalent(compiler.compile(expr), '1 || (2 || 3) && 4 && (5 || 6)')
     
     def test_binary_expression_output(self):
         compiler = self.compiler.EXPRESSION_COMPILER
@@ -124,6 +137,36 @@ class TestSelectCompiler(unittest.TestCase):
         select = Select([a]).filter(Expression(a) > 0, Expression(a) <= 5)
         self.assertEquivalent(self.compiler.compile(select),
             'SELECT ?a WHERE { FILTER (?a > 0 && ?a <= 5) }'
+        )
+    
+    def assertEquivalent(self, output, expected):
+        if not isinstance(output, basestring):
+            output = ' '.join(output)
+        return self.assertEqual(normalize(output), normalize(expected))
+
+class TestCompilerPrefixMap(unittest.TestCase):
+    def setUp(self):
+        self.compiler = SelectCompiler({TEST: 'test'})
+    
+    def test_select_empty_graph_pattern_output(self):
+        select = Select([a])
+        self.assertEquivalent(self.compiler.compile(select),
+            'PREFIX test: <http://www.example.com/test#> SELECT ?a WHERE { }'
+        )
+    
+    def test_select_basic_graph_pattern_output(self):
+        select = Select([a]).where((a, TEST.b, 'c'))
+        self.assertEquivalent(self.compiler.compile(select),
+            """PREFIX test: <http://www.example.com/test#>
+            SELECT ?a WHERE { ?a test:b "c" }"""
+        )
+        select = select.where((a, TEST.y, 'z'))
+        self.assertEquivalent(self.compiler.compile(select),
+            """PREFIX test: <http://www.example.com/test#>
+            SELECT ?a WHERE {
+            ?a test:b "c" .
+            ?a test:y "z"
+            }"""
         )
     
     def assertEquivalent(self, output, expected):

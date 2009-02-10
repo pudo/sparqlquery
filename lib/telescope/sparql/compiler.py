@@ -1,6 +1,6 @@
 from rdflib import Literal, URIRef, Namespace
 from telescope.sparql import operators
-from telescope.sparql.select import Select, Triple, GraphPattern, GroupGraphPattern
+from telescope.sparql.select import *
 from telescope.sparql.expressions import *
 from telescope.sparql.operators import FunctionCall
 
@@ -19,20 +19,22 @@ class Compiler(object):
             prefix_map = {}
         self.prefix_map = prefix_map
 
-    def uri(self, term):
+    def uri(self, uri):
         namespace, fragment = defrag(uri)
         namespace = URIRef(namespace)
         try:
             prefix = self.prefix_map[namespace]
         except KeyError:
-            return self.term(uri)
+            return self.term(uri, False)
         else:
             return '%s:%s' % (prefix, fragment)
     
-    def term(self, term):
+    def term(self, term, use_prefix=True):
         if term is None:
             return RDF.nil
-        if not hasattr(term, 'n3'):
+        elif use_prefix and isinstance(term, URIRef):
+            return self.uri(term)
+        elif not hasattr(term, 'n3'):
             return self.term(Literal(term))
         elif isinstance(term, Literal):
             if term.datatype in (XSD.int, XSD.float):
@@ -93,6 +95,7 @@ class ExpressionCompiler(Compiler):
                 yield operator
             bracketed = self.precedence_lt(expr, expression)
             yield self.compile(expr, bracketed)
+        del operator
     
     def binary(self, expression):
         left_bracketed = self.precedence_lt(expression.left, expression)
@@ -152,7 +155,7 @@ class SelectCompiler(Compiler):
     def prefix(self, prefix, namespace):
         yield 'PREFIX'
         yield '%s:' % (prefix,)
-        yield self.term(namespace)
+        yield self.term(namespace, False)
     
     def select(self, select):
         yield 'SELECT'
@@ -211,6 +214,16 @@ class SelectCompiler(Compiler):
                 yield ' '.join(self.triple(pattern))
                 if patterns or filters:
                     yield '.'
+            elif isinstance(pattern, UnionGraphPattern):
+                for union_pattern in pattern.patterns:
+                    try:
+                        union_sep
+                    except NameError:
+                        union_sep = 'UNION'
+                    else:
+                        yield union_sep
+                    yield ' '.join(self.graph_pattern(union_pattern, True))
+                del union_sep
             elif isinstance(pattern, GraphPattern):
                 token = None
                 for token in self.graph_pattern(pattern, False):
