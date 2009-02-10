@@ -1,5 +1,8 @@
 from operator import or_, and_, pos, neg, invert, eq, ne, lt, gt, le, ge, add, sub, mul, div
+from rdflib import Namespace
 from telescope.sparql.expressions import Expression, BinaryExpression
+
+FN = Namespace('http://www.w3.org/2005/xpath-functions#')
 
 class Operator(object):
     def __init__(self, operator):
@@ -86,3 +89,4 @@ class OperatorConstructor(object):
         return Operator('regex')(*params)
 
 op = OperatorConstructor()
+fn = op(FN)

@@ -4,6 +4,7 @@ from telescope.sparql.select import Select, Triple, GraphPattern, GroupGraphPatt
 from telescope.sparql.expressions import *
 from telescope.sparql.operators import FunctionCall
 
+RDF = Namespace('http://www.w3.org/1999/02/22-rdf-syntax-ns#')
 XSD = Namespace('http://www.w3.org/2001/XMLSchema#')
 
 def defrag(uri):
@@ -29,6 +30,8 @@ class Compiler(object):
             return '%s:%s' % (prefix, fragment)
     
     def term(self, term):
+        if term is None:
+            return RDF.nil
         if not hasattr(term, 'n3'):
             return self.term(Literal(term))
         elif isinstance(term, Literal):
