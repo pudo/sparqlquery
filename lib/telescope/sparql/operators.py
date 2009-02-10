@@ -39,9 +39,10 @@ class OperatorConstructor(object):
     def __getitem__(self, name):
         return getattr(self, name.replace('-', '_'))
     
+class BuiltinOperatorConstructor(OperatorConstructor):
     def __call__(self, namespace):
-        return self.__class__(namespace)
-    
+        return OperatorConstructor(namespace)
+
     def bound(self, variable):
         return Operator('bound')(variable)
     
@@ -82,7 +83,7 @@ class OperatorConstructor(object):
         params = [text, pattern] + (flags and [flags] or [])
         return Operator('regex')(*params)
 
-op = OperatorConstructor()
+op = BuiltinOperatorConstructor()
 fn = op(FN)
 asc = Operator('ASC')
 desc = Operator('DESC')
