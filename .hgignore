@@ -3,4 +3,5 @@ syntax: glob
 *~
 *.egg-info
 *.swp
+*.orig
 .coverage
