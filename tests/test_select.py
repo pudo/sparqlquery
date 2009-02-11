@@ -10,6 +10,19 @@ from telescope.sparql.util import v, to_variable
 TEST = Namespace('http://www.example.com/test#')
 a, b, c, x, y, z = map(to_variable, 'abcxyz')
 
+class TestSelect(unittest.TestCase):
+    def test_variables_arg_is_required(self):
+        self.assertRaises(TypeError, Select)
+    
+    def test_variables_arg_is_sufficient(self):
+        try:
+            select = Select([a])
+        except Exception:
+            self.fail()
+
+    def test_unknown_kwargs_raises_exception(self):
+        self.assertRaises(TypeError, Select, [], foo='bar')
+
 class TestProjectVariables(unittest.TestCase):
     def setUp(self):
         self.select = Select([a])
