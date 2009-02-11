@@ -2,7 +2,8 @@
 import re
 import unittest
 from rdflib import Variable, Namespace
-from telescope.sparql.select import Select, union
+from telescope.sparql.patterns import union, optional
+from telescope.sparql.select import Select
 from telescope.sparql.compiler import SelectCompiler
 from telescope.sparql.expressions import Expression, or_, and_
 from telescope.sparql import operators

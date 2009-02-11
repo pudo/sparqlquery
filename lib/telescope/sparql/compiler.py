@@ -1,8 +1,9 @@
 from rdflib import Literal, URIRef, Namespace
-from telescope.sparql import operators
-from telescope.sparql.select import *
 from telescope.sparql.expressions import *
+from telescope.sparql import operators
 from telescope.sparql.operators import FunctionCall
+from telescope.sparql.patterns import *
+from telescope.sparql.select import *
 
 RDF = Namespace('http://www.w3.org/1999/02/22-rdf-syntax-ns#')
 XSD = Namespace('http://www.w3.org/2001/XMLSchema#')

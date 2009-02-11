@@ -1,12 +1,16 @@
 #!/usr/bin/env python
 import unittest
+import doctest
 from rdflib import Variable, Namespace
+import telescope.sparql.select
 from telescope.sparql.select import Select
 from telescope.sparql.expressions import Expression
 from telescope.sparql.operators import op
 
 TEST = Namespace('http://www.example.com/test#')
 a, b, c, x, y, z = map(Variable, 'abcxyz')
+
+doctests = doctest.DocTestSuite(telescope.sparql.select)
 
 class TestProjectVariables(unittest.TestCase):
     def setUp(self):
@@ -61,5 +65,6 @@ class TestSelectfilter(unittest.TestCase):
         self.assert_(select._where.filters)
 
 if __name__ == '__main__':
-    unittest.main()
+    import util
+    unittest.main(testLoader=util.TestLoader())
 

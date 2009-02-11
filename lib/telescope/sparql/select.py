@@ -1,104 +1,35 @@
-from rdflib import Variable
+from rdflib import Variable, Namespace
 from telescope.sparql.expressions import Expression, and_
-from telescope.sparql import operators
-from telescope.sparql.util import v, to_variable, to_list
+from telescope.sparql.patterns import GroupGraphPattern
+from telescope.sparql.util import to_variable, v
 
-__all__ = ['Triple', 'Filter', 'GraphPattern', 'GroupGraphPattern',
-           'UnionGraphPattern', 'union', 'pattern', 'Select']
-
-class Triple(object):
-    def __init__(self, subject, predicate, object):
-        self.subject = subject
-        self.predicate = predicate
-        self.object = object
-    
-    def __iter__(self):
-        return iter((self.subject, self.predicate, self.object))
-    
-    def __repr__(self):
-        return "Triple(%r, %r, %r)" % tuple(self)
-    
-    @classmethod
-    def from_obj(cls, obj):
-        if isinstance(obj, Triple):
-            return obj
-        else:
-            return cls(*obj)
-
-class Filter(object):
-    def __init__(self, constraint):
-        self.constraint = constraint
-    
-    def __repr__(self):
-        return "Filter(%r)" % (self.constraint,)
-
-class GraphPattern(object):
-    def __init__(self, patterns):
-        self.patterns = []
-        self.filters = []
-        self.add(*patterns)
-    
-    def add(self, *patterns):
-        for pattern in patterns:
-            if not isinstance(pattern, GraphPattern):
-                pattern = Triple.from_obj(pattern)
-            self.patterns.append(pattern)
-    
-    def filter(self, *expressions):
-        self.filters.append(Filter(and_(*expressions)))
-    
-    def __nonzero__(self):
-        return bool(self.patterns)
-    
-    def __len__(self):
-        return len(self.patterns)
-    
-    def __getitem__(self, item):
-        return self.patterns[item]
-    
-    def __or__(self, other):
-        return UnionGraphPattern([self, GraphPattern.from_obj(other)])
-    
-    def __ror__(self, other):
-        return UnionGraphPattern([GraphPattern.from_obj(other), self])
-    
-    def _clone(self, **kwargs):
-        clone = self.__class__.__new__(self.__class__)
-        clone.__dict__.update(self.__dict__)
-        clone.patterns = self.patterns[:]
-        clone.__dict__.update(kwargs)
-        return clone
-    
-    @classmethod
-    def from_obj(cls, obj, **kwargs):
-        if isinstance(obj, GraphPattern):
-            return obj._clone(**kwargs)
-        else:
-            if isinstance(obj, Triple):
-                obj = [obj]
-            return cls(obj, **kwargs)
-
-class GroupGraphPattern(GraphPattern):
-    def __init__(self, patterns, optional=False):
-        GraphPattern.__init__(self, patterns)
-        self.optional = optional
-
-class UnionGraphPattern(GraphPattern):
-    def __init__(self, patterns):
-        GraphPattern.__init__(self, patterns)
-
-def union(*graph_patterns):
-    return UnionGraphPattern(map(GraphPattern.from_obj, graph_patterns))
-
-def pattern(*patterns, **kwargs):
-    return GroupGraphPattern(patterns, **kwargs)
-
-def optional(*patterns):
-    return GroupGraphPattern(patterns, optional=True)
+__all__ = ['Select']
 
 class Select(object):
+    """
+    Programmatically build SPARQL SELECT queries.
+    
+    Creating a `Select` requires at least a list of variables to project, which
+    may be given as `Variable`, `Expression`, or string instances:
+    
+    >>> query = Select([Variable('x'), v.name, 'mbox'])
+    >>> print query.compile()
+    SELECT ?x ?name ?mbox
+    WHERE { }
+    
+    Patterns and constraints are added with the `where` and `filter` methods,
+    respectively:
+    
+    >>> FOAF = Namespace('http://xmlns.com/foaf/0.1/')
+    >>> query = query.where((v.x, FOAF.name, v.name)).filter(v.name == "Brian")
+    >>> print query.compile({FOAF: 'foaf'})
+    PREFIX foaf: <http://xmlns.com/foaf/0.1/>
+    SELECT ?x ?name ?mbox
+    WHERE { ?x foaf:name ?name . FILTER (?name = "Brian") }
+
+    """
     def __init__(self, variables, *patterns, **kwargs):
-        self.variables = tuple(map(to_variable, to_list(variables)))
+        self.variables = tuple(map(to_variable, variables))
         self._where = GroupGraphPattern(patterns)
         self._distinct = kwargs.pop('distinct', False)
         self._reduced = kwargs.pop('reduced', False)
@@ -135,15 +66,17 @@ class Select(object):
     
     def project(self, *variables, **kwargs):
         add = kwargs.pop('add', False)
-        projection = []
-        for arg in variables:
-            for obj in to_list(arg):
-                variable = to_variable(obj)
-                if variable:
-                    projection.append(variable)
+        project_vars = []
+        for variable in variables:
+            if isinstance(variable, (Expression, Variable, basestring)):
+                vars = [to_variable(variable)]
+            else:
+                vars = map(to_variable, variable)
+            project_vars.extend(vars)
+        project_vars = tuple(project_vars)
         if add:
-            projection[:0] = self.variables
-        return self._clone(variables=tuple(projection))
+            project_vars = self.variables + project_vars
+        return self._clone(variables=project_vars)
     
     def where(self, *patterns, **kwargs):
         clone = self._clone()
@@ -193,4 +126,8 @@ class Select(object):
         from telescope.sparql.compiler import SelectCompiler
         compiler = SelectCompiler(prefix_map)
         return compiler.compile(self)
+
+if __name__ == '__main__':
+    import doctest
+    doctest.testmod()
 

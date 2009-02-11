@@ -1,5 +1,5 @@
 from rdflib import Namespace, Variable, Literal, URIRef
-from telescope.sparql.select import Triple
+from telescope.sparql.patterns import Triple
 
 __all__ = ['Term', 'Property', 'Label']
 

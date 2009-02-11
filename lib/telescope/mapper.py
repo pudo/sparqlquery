@@ -1,5 +1,6 @@
 from rdflib import Namespace, Variable, Literal, URIRef
-from telescope.sparql.select import Select, Triple
+from telescope.sparql.patterns import Triple
+from telescope.sparql.select import Select
 from telescope.properties import PropertyManager
 from telescope.query import Query
 
