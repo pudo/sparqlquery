@@ -1,7 +1,7 @@
 from rdflib import Variable, Namespace
 from telescope.sparql.expressions import Expression, and_
 from telescope.sparql.patterns import GroupGraphPattern
-from telescope.sparql.util import to_variable, v
+from telescope.sparql.util import to_variable, to_list, v
 
 __all__ = ['Select']
 
@@ -66,17 +66,14 @@ class Select(object):
     
     def project(self, *variables, **kwargs):
         add = kwargs.pop('add', False)
-        project_vars = []
-        for variable in variables:
-            if isinstance(variable, (Expression, Variable, basestring)):
-                vars = [to_variable(variable)]
-            else:
-                vars = map(to_variable, variable)
-            project_vars.extend(vars)
-        project_vars = tuple(project_vars)
+        projection = []
+        for arg in variables:
+            for variable in map(to_variable, to_list(arg)):
+                if variable:
+                    projection.append(variable)
         if add:
-            project_vars = self.variables + project_vars
-        return self._clone(variables=project_vars)
+            projection[:0] = self.variables
+        return self._clone(variables=tuple(projection))
     
     def where(self, *patterns, **kwargs):
         clone = self._clone()

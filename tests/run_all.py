@@ -1,12 +1,8 @@
 #!/usr/bin/env python
-import unittest
-import util
-from test_expressions import *
-from test_modifiers import *
-from test_select import *
-from test_compiler import *
-from test_mapper import *
+import pkg_resources
+pkg_resources.require('nose')
+import nose
 
 if __name__ == '__main__':
-    unittest.main(testLoader=util.TestLoader())
+    nose.main()
 

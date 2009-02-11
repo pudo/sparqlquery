@@ -24,3 +24,4 @@ def to_list(obj):
         except TypeError:
             pass
     return [obj]
+

@@ -1,4 +1,3 @@
-import unittest
 import os.path
 from rdflib import ConjunctiveGraph
 
@@ -10,15 +9,4 @@ def graph(*filenames):
     for filename in filenames:
         graph.load(resource(filename))
     return graph
-
-class TestLoader(unittest.TestLoader):
-    def loadTestsFromModule(self, module):
-        tests = []
-        for name in dir(module):
-            obj = getattr(module, name)
-            if isinstance(obj, type) and issubclass(obj, unittest.TestCase):
-                tests.append(self.loadTestsFromTestCase(obj))
-            elif isinstance(obj, unittest.TestSuite):
-                tests.append(obj)
-        return self.suiteClass(tests)
 

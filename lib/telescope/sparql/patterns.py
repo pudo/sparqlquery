@@ -1,3 +1,4 @@
+import warnings
 from telescope.sparql.expressions import and_
 
 __all__ = ['Triple', 'Filter', 'GraphPattern', 'GroupGraphPattern',
@@ -37,7 +38,7 @@ class GraphPattern(object):
     
     def add(self, *patterns):
         for pattern in patterns:
-            if not isinstance(pattern, GraphPattern):
+            if not isinstance(pattern, (Triple, GraphPattern)):
                 pattern = Triple.from_obj(pattern)
             self.patterns.append(pattern)
     
@@ -71,7 +72,7 @@ class GraphPattern(object):
         if isinstance(obj, GraphPattern):
             return obj._clone(**kwargs)
         else:
-            if isinstance(obj, Triple):
+            if isinstance(obj, (Triple, GraphPattern)):
                 obj = [obj]
             return cls(obj, **kwargs)
 

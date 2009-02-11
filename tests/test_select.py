@@ -1,21 +1,31 @@
 #!/usr/bin/env python
 import unittest
-import doctest
 from rdflib import Variable, Namespace
-import telescope.sparql.select
-from telescope.sparql.select import Select
+from telescope.sparql.patterns import *
+from telescope.sparql.select import *
 from telescope.sparql.expressions import Expression
 from telescope.sparql.operators import op
+from telescope.sparql.util import v, to_variable
 
 TEST = Namespace('http://www.example.com/test#')
-a, b, c, x, y, z = map(Variable, 'abcxyz')
-
-doctests = doctest.DocTestSuite(telescope.sparql.select)
+a, b, c, x, y, z = map(to_variable, 'abcxyz')
 
 class TestProjectVariables(unittest.TestCase):
     def setUp(self):
         self.select = Select([a])
     
+    def test_variables_can_be_expressions(self):
+        select = self.select.project(v.foo)
+        self.assert_(Variable('foo') in select.variables)
+    
+    def test_variables_can_be_rdflib_variables(self):
+        select = self.select.project(Variable('foo'))
+        self.assert_(Variable('foo') in select.variables)
+
+    def test_variables_can_be_strings(self):
+        select = self.select.project('foo')
+        self.assert_(Variable('foo') in select.variables)
+
     def test_variables_arg_adds_variables(self):
         self.assert_(a in self.select.variables)
     
@@ -52,7 +62,7 @@ class TestSelectWhere(unittest.TestCase):
         select = self.select.where(('a', TEST.b, 'c'), optional=True)
         self.assert_(select._where[-1].optional)
 
-class TestSelectfilter(unittest.TestCase):
+class TestSelectFilter(unittest.TestCase):
     def setUp(self):
         self.select = Select([])
     
@@ -63,8 +73,4 @@ class TestSelectfilter(unittest.TestCase):
     def test_method_args_add_filters(self):
         select = self.select.filter(Expression(2) > 1, Expression('z') > 'a')
         self.assert_(select._where.filters)
-
-if __name__ == '__main__':
-    import util
-    unittest.main(testLoader=util.TestLoader())
 
