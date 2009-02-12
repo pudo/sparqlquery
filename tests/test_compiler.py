@@ -5,12 +5,12 @@ from rdflib import Variable, Namespace
 from telescope.sparql.patterns import *
 from telescope.sparql.select import Select
 from telescope.sparql.compiler import SelectCompiler
-from telescope.sparql.expressions import Expression, or_, and_
+from telescope.sparql.expressions import Expression
 from telescope.sparql import operators
-from telescope.sparql.util import v, to_variable
+from telescope.sparql.helpers import *
 
 TEST = Namespace('http://www.example.com/test#')
-a, b, c, x, y, z = map(to_variable, 'abcxyz')
+a, b, c, x, y, z = map(v, 'abcxyz')
 
 def normalize(text):
     return re.sub(r'\s+', ' ', unicode(text).strip())

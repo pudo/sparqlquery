@@ -1,7 +1,8 @@
 from rdflib import Variable, Namespace
-from telescope.sparql.expressions import Expression, and_
+from telescope.sparql.expressions import Expression
 from telescope.sparql.patterns import GroupGraphPattern
-from telescope.sparql.util import to_variable, to_list, v
+from telescope.sparql.helpers import *
+from telescope.sparql.util import to_variable, to_list
 
 __all__ = ['Select']
 

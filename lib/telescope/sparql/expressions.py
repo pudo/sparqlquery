@@ -1,7 +1,8 @@
 import operator
-from rdflib import URIRef
+from rdflib import Variable
 
-__all__ = ['Expression', 'BinaryExpression', 'ConditionalExpression', 'and_', 'or_']
+__all__ = ['Expression', 'BinaryExpression', 'ConditionalExpression',
+           'VariableExpressionConstructor', 'and_', 'or_']
 
 unary = lambda op: lambda self: Expression(self, op)
 binary = lambda op: lambda self, other: BinaryExpression(op, self, other)
@@ -10,20 +11,20 @@ conditional = lambda op: lambda self, other: ConditionalExpression(op, (self, ot
 conditional.r = lambda op: lambda self, other: ConditionalExpression(op, (other, self))
 
 class Expression(object):
-    def __init__(self, expression, operator=None, lang=None, type=None):
-        self.expression = expression
+    def __init__(self, value, operator=None, lang=None, type=None):
+        self.value = value
         self.operator = operator
         self.language = lang
         self.datatype = type
     
     def __repr__(self):
-        expression = self.expression
-        if hasattr(expression, 'n3'):
-            expression = expression.n3()
+        value = self.value
+        if hasattr(value, 'n3'):
+            value = value.n3()
         if self.operator:
-            return "Expression(%r, %r)" % (expression, self.operator)
+            return "Expression(%r, %r)" % (value, self.operator)
         else:
-            return "Expression(%r)" % (expression,)
+            return "Expression(%r)" % (value,)
 
     def _clone(self, **kwargs):
         clone = self.__class__.__new__(self.__class__)
@@ -94,17 +95,26 @@ class BinaryExpression(Expression):
         return "BinaryExpression(%r, %r, %r)" % (self.operator, self.left, self.right)
 
 class ConditionalExpression(Expression):
-    def __init__(self, operator, expressions):
+    def __init__(self, operator, operands):
         Expression.__init__(self, None, operator)
-        self.expressions = expressions
+        self.operands = operands
 
     def __repr__(self):
-        return "ConditionalExpression(%r, %r)" % (self.operator,
-                self.expressions)
+        return "ConditionalExpression(%r, %r)" % (self.operator, self.operands)
 
-def or_(*expressions):
-    return ConditionalExpression(operator.or_, expressions)
+def and_(*operands):
+    return ConditionalExpression(operator.and_, operands)
 
-def and_(*expressions):
-    return ConditionalExpression(operator.and_, expressions)
+def or_(*operands):
+    return ConditionalExpression(operator.or_, operands)
+
+class VariableExpressionConstructor(object):
+    def __call__(self, name):
+        return Expression(Variable(name))
+
+    def __getattr__(self, name):
+        return self(name)
+
+    def __getitem__(self, name):
+        return self(name)
 

@@ -42,7 +42,7 @@ class Compiler(object):
             if term.operator:
                 raise RuntimeError("Found expression with operator; term expected.")
             else:
-                return self.term(term.expression)
+                return self.term(term.value)
         elif not hasattr(term, 'n3'):
             return self.term(Literal(term))
         elif use_prefix and isinstance(term, URIRef):
@@ -103,7 +103,7 @@ class ExpressionCompiler(Compiler):
         yield ')'
     
     def conditional(self, expression):
-        for expr in expression.expressions:
+        for expr in expression.operands:
             try:
                 operator
             except NameError:
@@ -130,7 +130,7 @@ class ExpressionCompiler(Compiler):
     def unary(self, expression):
         if expression.operator:
             yield self.operator(expression)
-        yield self.compile(expression.expression)
+        yield self.compile(expression.value)
     
     def compile(self, expression, bracketed=False):
         if not bracketed:

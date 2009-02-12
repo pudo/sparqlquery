@@ -1,8 +1,11 @@
-from operator import or_, and_, pos, neg, invert, eq, ne, lt, gt, le, ge, add, sub, mul, div
-from rdflib import Namespace
+from operator import or_, and_, pos, neg, inv, invert
+from operator import eq, ne, lt, gt, le, ge, add, sub, mul, div
 from telescope.sparql.expressions import Expression, BinaryExpression
 
-FN = Namespace('http://www.w3.org/2005/xpath-functions#')
+__all__ = ['Operator', 'FunctionCall', 'OperatorConstructor',
+           'BuiltinOperatorConstructor']
+
+not_ = invert
 
 class Operator(object):
     def __init__(self, operator):
@@ -14,10 +17,6 @@ class Operator(object):
     def __repr__(self):
         return "Operator(%r)" % (self.operator,)
 
-class BinaryOperator(Operator):
-    def __call__(self, left, right):
-        return BinaryExpression(self.operator, left, right)
-
 class FunctionCall(Expression):
     def __init__(self, operator, arg_list):
         Expression.__init__(self, None, operator)
@@ -27,19 +26,25 @@ class FunctionCall(Expression):
         return "FunctionCall(%r, %r)" % (self.operator, self.arg_list)
 
 class OperatorConstructor(object):
-    def __init__(self, namespace=None):
+    def __init__(self, namespace):
         self._namespace = namespace
     
-    def __getattribute__(self, name):
-        if name.startswith('_') or self._namespace is None:
-            return object.__getattribute__(self, name)
-        else:
-            return Operator(self._namespace[name])
+    def __getattribute__(self, operator):
+        try:
+            value = object.__getattribute__(self, operator)
+        except AttributeError:
+            if self._namespace:
+                operator = self._namespace[operator]
+            value = Operator(operator)
+        return value
     
-    def __getitem__(self, name):
-        return getattr(self, name.replace('-', '_'))
-    
+    def __getitem__(self, operator):
+        return getattr(self, operator.replace('-', '_'))
+
 class BuiltinOperatorConstructor(OperatorConstructor):
+    def __init__(self):
+        OperatorConstructor.__init__(self, None)
+
     def __call__(self, namespace):
         return OperatorConstructor(namespace)
 
@@ -65,16 +70,16 @@ class BuiltinOperatorConstructor(OperatorConstructor):
         return Operator('datatype')(literal)
     
     def logical_or(self, left, right):
-        return BinaryOperator('logical-or')(left, right)
+        return BinaryExpression(or_, left, right)
     
     def logical_and(self, left, right):
-        return BinaryOperator('logical-and')(left, right)
+        return BinaryExpression(and_, left, right)
     
-    def RDFTerm_equal(self, term1, term2):
-        return BinaryOperator('RDFTerm-equal')(term2, term2)
+    def RDFTerm_equal(self, left, right):
+        return BinaryExpression(eq, left, right)
     
-    def sameTerm(self, term1, term2):
-        return Operator('sameTerm')(term1, term2)
+    def sameTerm(self, left, right):
+        return Operator('sameTerm')(left, right)
     
     def langMatches(self, tag, range):
         return Operator('langMatches')(tag, range)
@@ -83,7 +88,3 @@ class BuiltinOperatorConstructor(OperatorConstructor):
         params = [text, pattern] + (flags and [flags] or [])
         return Operator('regex')(*params)
 
-op = BuiltinOperatorConstructor()
-fn = op(FN)
-asc = Operator('ASC')
-desc = Operator('DESC')

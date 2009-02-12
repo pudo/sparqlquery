@@ -3,12 +3,11 @@ import unittest
 from rdflib import Variable, Namespace
 from telescope.sparql.patterns import *
 from telescope.sparql.select import *
-from telescope.sparql.expressions import Expression
-from telescope.sparql.operators import op
-from telescope.sparql.util import v, to_variable
+from telescope.sparql.expressions import *
+from telescope.sparql.helpers import *
 
 TEST = Namespace('http://www.example.com/test#')
-a, b, c, x, y, z = map(to_variable, 'abcxyz')
+a, b, c, x, y, z = map(Variable, 'abcxyz')
 
 class TestSelect(unittest.TestCase):
     def test_variables_arg_is_required(self):
