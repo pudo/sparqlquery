@@ -9,7 +9,7 @@ from telescope.sparql.expressions import Expression
 from telescope.sparql import operators
 from telescope.sparql.helpers import *
 
-TEST = Namespace('http://www.example.com/test#')
+TEST = Namespace('http://example.org/test#')
 a, b, c, x, y, z = map(v, 'abcxyz')
 
 def normalize(text):
@@ -28,13 +28,13 @@ class TestSelectCompiler(unittest.TestCase):
     def test_select_basic_graph_pattern_output(self):
         select = Select([a]).where((a, TEST.b, 'c'))
         self.assertEquivalent(self.compiler.compile(select),
-            'SELECT ?a WHERE { ?a <http://www.example.com/test#b> "c" }'
+            'SELECT ?a WHERE { ?a <http://example.org/test#b> "c" }'
         )
         select = select.where((a, TEST.y, 'z'))
         self.assertEquivalent(self.compiler.compile(select),
             """SELECT ?a WHERE {
-            ?a <http://www.example.com/test#b> "c" .
-            ?a <http://www.example.com/test#y> "z"
+            ?a <http://example.org/test#b> "c" .
+            ?a <http://example.org/test#y> "z"
             }"""
         )
     
@@ -42,22 +42,22 @@ class TestSelectCompiler(unittest.TestCase):
         select = Select([a]).where((a, TEST.b, 'c'), optional=True)
         self.assertEquivalent(self.compiler.compile(select),
             """SELECT ?a WHERE {
-            OPTIONAL { ?a <http://www.example.com/test#b> "c" }
+            OPTIONAL { ?a <http://example.org/test#b> "c" }
             }"""
         )
         select = select.where((x, TEST.y, z), (z, TEST.y, a), optional=True)
         self.assertEquivalent(self.compiler.compile(select),
             """SELECT ?a WHERE {
-            OPTIONAL { ?a <http://www.example.com/test#b> "c" }
+            OPTIONAL { ?a <http://example.org/test#b> "c" }
             OPTIONAL {
-                ?x <http://www.example.com/test#y> ?z .
-                ?z <http://www.example.com/test#y> ?a
+                ?x <http://example.org/test#y> ?z .
+                ?z <http://example.org/test#y> ?a
             } }"""
         )
         select = Select([a]).where(optional((a, TEST.b, 'c')))
         self.assertEquivalent(self.compiler.compile(select),
             """SELECT ?a WHERE {
-            OPTIONAL { ?a <http://www.example.com/test#b> "c" }
+            OPTIONAL { ?a <http://example.org/test#b> "c" }
             }"""
         )
 
@@ -65,18 +65,18 @@ class TestSelectCompiler(unittest.TestCase):
         select = Select([a, z], (a, TEST.b, 'c')).where((a, TEST.y, z), optional=True)
         self.assertEquivalent(self.compiler.compile(select),
             """SELECT ?a ?z WHERE {
-            ?a <http://www.example.com/test#b> "c" .
-            OPTIONAL { ?a <http://www.example.com/test#y> ?z }
+            ?a <http://example.org/test#b> "c" .
+            OPTIONAL { ?a <http://example.org/test#y> ?z }
             }"""
         )
         select = select.where((x, TEST.y, z), (b, TEST.x, 'y')).where((z, TEST.b, 'a'), optional=True)
         self.assertEquivalent(self.compiler.compile(select),
             """SELECT ?a ?z WHERE {
-            ?a <http://www.example.com/test#b> "c" .
-            OPTIONAL { ?a <http://www.example.com/test#y> ?z }
-            ?x <http://www.example.com/test#y> ?z .
-            ?b <http://www.example.com/test#x> "y" .
-            OPTIONAL { ?z <http://www.example.com/test#b> "a" }
+            ?a <http://example.org/test#b> "c" .
+            OPTIONAL { ?a <http://example.org/test#y> ?z }
+            ?x <http://example.org/test#y> ?z .
+            ?b <http://example.org/test#x> "y" .
+            OPTIONAL { ?z <http://example.org/test#b> "a" }
             }"""
         )
     
@@ -84,8 +84,8 @@ class TestSelectCompiler(unittest.TestCase):
         select = Select([a]).where(union([(a, TEST.b, 'c')], [(a, TEST.y, 'z')]))
         self.assertEquivalent(self.compiler.compile(select),
             """SELECT ?a WHERE {
-            { ?a <http://www.example.com/test#b> "c" } UNION
-            { ?a <http://www.example.com/test#y> "z" }
+            { ?a <http://example.org/test#b> "c" } UNION
+            { ?a <http://example.org/test#y> "z" }
             }"""
         )
     
@@ -159,18 +159,18 @@ class TestCompilerPrefixMap(unittest.TestCase):
     def test_select_empty_graph_pattern_output(self):
         select = Select([a])
         self.assertEquivalent(self.compiler.compile(select),
-            'PREFIX test: <http://www.example.com/test#> SELECT ?a WHERE { }'
+            'PREFIX test: <http://example.org/test#> SELECT ?a WHERE { }'
         )
     
     def test_select_basic_graph_pattern_output(self):
         select = Select([a]).where((a, TEST.b, 'c'))
         self.assertEquivalent(self.compiler.compile(select),
-            """PREFIX test: <http://www.example.com/test#>
+            """PREFIX test: <http://example.org/test#>
             SELECT ?a WHERE { ?a test:b "c" }"""
         )
         select = select.where((a, TEST.y, 'z'))
         self.assertEquivalent(self.compiler.compile(select),
-            """PREFIX test: <http://www.example.com/test#>
+            """PREFIX test: <http://example.org/test#>
             SELECT ?a WHERE {
             ?a test:b "c" .
             ?a test:y "z"
