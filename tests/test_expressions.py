@@ -1,10 +1,9 @@
-from nose.tools import assert_raises
-
 import operator
+from nose.tools import assert_raises
 from rdflib import Variable, Namespace, URIRef, Literal, BNode
 from telescope.sparql.expressions import *
-
-XSD = Namespace('http://www.w3.org/2001/XMLSchema#')
+from telescope.sparql.helpers import XSD
+import helpers
 
 class TestCreatingExpression:
     def setup(self):
@@ -114,24 +113,18 @@ class TestCallingConditionalHelpers:
         assert args == tuple(expr.operands) 
 
 class TestGeneratingNewExpression:
-    UNARY_OPERATORS = [operator.pos, operator.neg, operator.invert]
-    CONDITIONAL_OPERATORS = [operator.or_, operator.and_]
-    BINARY_OPERATORS = [operator.eq, operator.ne, operator.lt, operator.gt,
-                        operator.le, operator.ge, operator.add, operator.sub,
-                        operator.mul, operator.div]
-
     def setup(self):
         self.x = Expression('x')
         self.y = Expression('y')
         self.z = Expression('z')
 
     def test_logical_op_returns_conditional_expression(self):
-        for op in self.CONDITIONAL_OPERATORS:
+        for op in helpers.CONDITIONAL_OPERATORS:
             expr = op(self.x, self.y)
             assert isinstance(expr, ConditionalExpression)
     
     def test_comparison_returns_binary_expression(self):
-        for op in self.BINARY_OPERATORS:
+        for op in helpers.BINARY_OPERATORS:
             expr = op(self.x, self.y)
             assert isinstance(expr, BinaryExpression)
 

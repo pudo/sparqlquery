@@ -2,6 +2,7 @@ from rdflib import Variable, Namespace, URIRef
 from telescope.sparql.expressions import Expression
 from telescope.sparql.operators import *
 from telescope.sparql.helpers import *
+import helpers
 
 FUNC = Namespace('http://example.org/func#')
 
@@ -70,9 +71,6 @@ class TestCallingCustomOperators:
             assert isinstance(operator, Operator)
 
 class TestCallingBuiltinOperators:
-    BUILTIN_OPERATORS = ['bound', 'isIRI', 'isBlank', 'isLiteral', 'str',
-                         'lang', 'datatype', 'logical-or', 'logical-and',
-                         'RDFTerm-equal', 'sameTerm', 'langMatches', 'regex']
     ARG_LIST_FIXTURES = {
         'bound': [Variable('x')],
         'isIRI': [URIRef('mailto:bob@example.org')],
@@ -93,12 +91,12 @@ class TestCallingBuiltinOperators:
         self.op = BuiltinOperatorConstructor()
 
     def test_getattr_gets_callable(self):
-        for op in self.BUILTIN_OPERATORS:
+        for op in helpers.BUILTIN_OPERATORS:
             operator = getattr(self.op, op.replace('-', '_'), None)
             assert callable(operator)
 
     def test_getitem_gets_callable(self):
-        for op in self.BUILTIN_OPERATORS:
+        for op in helpers.BUILTIN_OPERATORS:
             operator = self.op[op]
             assert callable(operator)
     

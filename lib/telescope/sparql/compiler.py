@@ -1,20 +1,14 @@
+from operator import itemgetter
 from rdflib import Literal, URIRef, Namespace
 from telescope.sparql.expressions import *
 from telescope.sparql import operators
 from telescope.sparql.operators import FunctionCall
 from telescope.sparql.patterns import *
 from telescope.sparql.select import *
+from telescope.sparql.helpers import RDF, XSD, is_a
+from telescope.sparql.util import defrag
 
-RDF = Namespace('http://www.w3.org/1999/02/22-rdf-syntax-ns#')
-XSD = Namespace('http://www.w3.org/2001/XMLSchema#')
-
-def defrag(uri):
-    if '#' in uri:
-        namespace, fragment = uri.split('#', 1)
-        return ('%s#' % namespace, fragment)
-    else:
-        namespace, fragment = uri.rsplit('/', 1)
-        return ('%s/' % namespace, fragment)
+__all__ = ['Compiler', 'ExpressionCompiler', 'SelectCompiler']
 
 def join(tokens, sep=' '):
     return sep.join([token for token in tokens if token])
@@ -25,39 +19,6 @@ class Compiler(object):
             prefix_map = {}
         self.prefix_map = prefix_map
 
-    def uri(self, uri):
-        namespace, fragment = defrag(uri)
-        namespace = URIRef(namespace)
-        try:
-            prefix = self.prefix_map[namespace]
-        except KeyError:
-            return self.term(uri, False)
-        else:
-            return '%s:%s' % (prefix, fragment)
-    
-    def term(self, term, use_prefix=True):
-        if term is None:
-            return RDF.nil
-        elif isinstance(term, Expression):
-            if term.operator:
-                raise RuntimeError("Found expression with operator; term expected.")
-            else:
-                return self.term(term.value)
-        elif not hasattr(term, 'n3'):
-            return self.term(Literal(term))
-        elif use_prefix and isinstance(term, URIRef):
-            return self.uri(term)
-        elif isinstance(term, Literal):
-            if term.datatype in (XSD.int, XSD.float):
-                return unicode(term)
-        return term.n3()
-
-    def triple(self, triple):
-        subject, predicate, object = triple
-        yield self.term(subject)
-        yield self.term(predicate)
-        yield self.term(object)
-
 class ExpressionCompiler(Compiler):
     PRECEDENCE = {
         operators.or_: 0, 'logical-or': 0,
@@ -65,9 +26,10 @@ class ExpressionCompiler(Compiler):
         operators.eq: 2, 'RDFTerm-equal': 2, operators.ne: 2,
         operators.lt: 2, operators.gt: 2, operators.le: 2, operators.ge: 2,
         operators.add: 3, operators.sub: 3, operators.mul: 4, operators.div: 4,
-        operators.pos: 5, operators.neg: 5, operators.invert: 5,
-        None: 6
+        operators.pos: 5, operators.neg: 5,
+        operators.invert: 5, operators.inv: 5
     }
+    DEFAULT_PRECEDENCE = 6
     OPERATORS = {
         operators.or_: '||', 'logical-or': '||',
         operators.and_: '&&', 'logical-and': '&&',
@@ -76,26 +38,71 @@ class ExpressionCompiler(Compiler):
         operators.le: '<=', operators.ge: '>=',
         operators.add: '+', operators.sub: '-',
         operators.mul: '*', operators.div: '/',
-        operators.pos: '+', operators.neg: '-', operators.invert: '!',
+        operators.pos: '+', operators.neg: '-',
+        operators.invert: '!', operators.inv: '!'
     }
     
-    def operator(self, expression):
-        operator = expression.operator
-        if not isinstance(operator, URIRef):
-            return self.OPERATORS.get(operator, unicode(operator))
+    def compile(self, expression, bracketed=False):
+        if not bracketed:
+            if isinstance(expression, ConditionalExpression):
+                return join(self.conditional(expression))
+            elif isinstance(expression, BinaryExpression):
+                return join(self.binary(expression))
+            elif isinstance(expression, FunctionCall):
+                return join(self.function(expression), '')
+            elif isinstance(expression, Expression):
+                return join(self.unary(expression), '')
+            else:
+                return self.term(expression)
         else:
-            return self.uri(operator)
+            return join(self.bracketed(expression), '')
+    
+    def get_precedence(self, obj):
+        if isinstance(obj, Expression):
+            return self.PRECEDENCE.get(obj.operator, self.DEFAULT_PRECEDENCE)
+        return self.DEFAULT_PRECEDENCE
     
     def precedence_lt(self, a, b):
-        if isinstance(a, Expression):
-            a_precedence = self.PRECEDENCE.get(a.operator)
+        return self.get_precedence(a) < self.get_precedence(b)
+    
+    def uri(self, uri):
+        if uri is not is_a:
+            namespace, fragment = defrag(uri)
+            namespace = URIRef(namespace)
+            try:
+                prefix = self.prefix_map[namespace]
+            except KeyError:
+                return self.term(uri, False)
+            else:
+                return '%s:%s' % (prefix, fragment)
         else:
-            a_precedence = self.PRECEDENCE[None]
-        if isinstance(b, Expression):
-            b_precedence = self.PRECEDENCE.get(b.operator)
+            return 'a'
+    
+    def term(self, term, use_prefix=True):
+        if term is None:
+            return RDF.nil
+        elif isinstance(term, Expression):
+            if term.operator:
+                raise ValueError("Found expression with operator; term expected.")
+            else:
+                return self.term(term.value)
+        elif not hasattr(term, 'n3'):
+            return self.term(Literal(term))
+        elif use_prefix and isinstance(term, URIRef):
+            return self.uri(term)
+        elif isinstance(term, Literal):
+            if term.datatype in (XSD.int, XSD.integer, XSD.float):
+                return unicode(term)
+        return term.n3()
+    
+    def operator(self, operator):
+        token = self.OPERATORS.get(operator)
+        if token:
+            return token
+        elif isinstance(operator, URIRef):
+            return self.uri(operator)
         else:
-            b_precedence = self.PRECEDENCE[None]
-        return a_precedence < b_precedence
+            return unicode(operator)
     
     def bracketed(self, expression):
         yield '('
@@ -107,7 +114,7 @@ class ExpressionCompiler(Compiler):
             try:
                 operator
             except NameError:
-                operator = self.operator(expression)
+                operator = self.operator(expression.operator)
             else:
                 yield operator
             bracketed = self.precedence_lt(expr, expression)
@@ -118,45 +125,36 @@ class ExpressionCompiler(Compiler):
         left_bracketed = self.precedence_lt(expression.left, expression)
         right_bracketed = self.precedence_lt(expression.right, expression)
         yield self.compile(expression.left, left_bracketed)
-        yield self.operator(expression)
+        yield self.operator(expression.operator)
         yield self.compile(expression.right, right_bracketed)
     
     def function(self, expression):
-        yield self.operator(expression)
+        yield self.operator(expression.operator)
         yield '('
-        yield ', '.join(self.compile(arg) for arg in expression.arg_list)
+        yield join([self.compile(arg) for arg in expression.arg_list], ', ')
         yield ')'
     
     def unary(self, expression):
         if expression.operator:
-            yield self.operator(expression)
+            yield self.operator(expression.operator)
         yield self.compile(expression.value)
-    
-    def compile(self, expression, bracketed=False):
-        if not bracketed:
-            if isinstance(expression, ConditionalExpression):
-                return ' '.join(self.conditional(expression))
-            elif isinstance(expression, BinaryExpression):
-                return ' '.join(self.binary(expression))
-            elif isinstance(expression, FunctionCall):
-                return ''.join(self.function(expression))
-            elif isinstance(expression, Expression):
-                return ''.join(self.unary(expression))
-            else:
-                return self.term(expression)
-        else:
-            return ''.join(self.bracketed(expression))
 
 class SelectCompiler(Compiler):
     def __init__(self, prefix_map=None):
         Compiler.__init__(self, prefix_map)
         self.expression_compiler = ExpressionCompiler(self.prefix_map)
     
+    def compile(self, select):
+        return join(self.clauses(select), '\n')
+    
     def expression(self, expression, bracketed=False):
         yield self.expression_compiler.compile(expression, bracketed)
     
-    def compile(self, select):
-        return join(self.clauses(select), '\n')
+    def triple(self, triple):
+        subject, predicate, object = triple
+        yield self.expression_compiler.term(subject)
+        yield self.expression_compiler.term(predicate)
+        yield self.expression_compiler.term(object)
     
     def clauses(self, select):
         for prefix in self.prefixes():
@@ -168,13 +166,14 @@ class SelectCompiler(Compiler):
         yield join(self.offset(select))
     
     def prefixes(self):
-        for namespace, prefix in self.prefix_map.iteritems():
-            yield ' '.join(self.prefix(prefix, namespace))
+        prefixes = sorted(self.prefix_map.iteritems(), key=itemgetter(1))
+        for namespace, prefix in prefixes:
+            yield join(self.prefix(prefix, namespace))
     
     def prefix(self, prefix, namespace):
         yield 'PREFIX'
         yield '%s:' % (prefix,)
-        yield self.term(namespace, False)
+        yield self.expression_compiler.term(namespace, False)
     
     def select(self, select):
         yield 'SELECT'
@@ -199,14 +198,14 @@ class SelectCompiler(Compiler):
         if select._order_by:
             yield 'ORDER BY'
             for expression in select._order_by:
-                yield self.expression(expression)
+                yield join(self.expression(expression))
     
     def projection(self, select):
         if '*' in select.variables:
             yield '*'
         else:
             for variable in select.variables:
-                yield self.term(variable)
+                yield self.expression_compiler.term(variable)
     
     def where(self, select):
         yield 'WHERE'
@@ -245,7 +244,7 @@ class SelectCompiler(Compiler):
                     yield '.'
         while filters:
             filter = filters.pop(0)
-            yield ' '.join(self.filter(filter))
+            yield join(self.filter(filter))
             if filters:
                 yield '.'
         if braces:
@@ -253,6 +252,11 @@ class SelectCompiler(Compiler):
     
     def filter(self, filter):
         yield 'FILTER'
-        bracketed = isinstance(filter.constraint,
-            (ConditionalExpression, BinaryExpression))
-        yield join(self.expression(filter.constraint, bracketed))
+        constraint = filter.constraint
+        bracketed = False
+        if isinstance(constraint, ConditionalExpression):
+            if len(constraint.operands) == 1:
+                constraint = constraint.operands[0]
+        if isinstance(constraint, (BinaryExpression, ConditionalExpression)):
+            bracketed = True
+        yield join(self.expression(constraint, bracketed))
