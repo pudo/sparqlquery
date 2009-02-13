@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 import re
 from nose.tools import assert_raises, assert_equal
 from rdflib import Variable, Namespace, Literal
@@ -11,7 +10,6 @@ from telescope.sparql.compiler import *
 from telescope.sparql.helpers import *
 import helpers
 
-EX = Namespace('http://example.org/')
 FOAF = Namespace('http://xmlns.com/foaf/0.1/')
 DC10 = Namespace('http://purl.org/dc/elements/1.0/')
 DC11 = Namespace('http://purl.org/dc/elements/1.1/')

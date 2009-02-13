@@ -1,88 +1,95 @@
-#!/usr/bin/env python
-import unittest
+from nose.tools import assert_raises
 from rdflib import Variable, Namespace
 from telescope.sparql.patterns import *
 from telescope.sparql.select import *
 from telescope.sparql.expressions import *
 from telescope.sparql.helpers import *
 
-TEST = Namespace('http://www.example.com/test#')
-a, b, c, x, y, z = map(Variable, 'abcxyz')
+FOAF = Namespace('http://xmlns.com/foaf/0.1/')
 
-class TestSelect(unittest.TestCase):
+class TestCreatingSelect:
     def test_variables_arg_is_required(self):
-        self.assertRaises(TypeError, Select)
+        assert_raises(TypeError, Select)
     
     def test_variables_arg_is_sufficient(self):
         try:
-            select = Select([a])
+            select = Select([v.x])
         except Exception:
-            self.fail()
+            assert False
 
     def test_unknown_kwargs_raises_exception(self):
-        self.assertRaises(TypeError, Select, [], foo='bar')
+        assert_raises(TypeError, Select, [], foo='bar')
 
-class TestProjectVariables(unittest.TestCase):
-    def setUp(self):
-        self.select = Select([a])
+class TestProjectingVariables:
+    def setup(self):
+        self.select = Select([])
+
+    def test_variables_arg_adds_variables(self):
+        select = Select([Variable('foo')])
+        assert Variable('foo') in select.variables
     
     def test_variables_can_be_expressions(self):
         select = self.select.project(v.foo)
-        self.assert_(Variable('foo') in select.variables)
+        assert Variable('foo') in select.variables
     
     def test_variables_can_be_rdflib_variables(self):
         select = self.select.project(Variable('foo'))
-        self.assert_(Variable('foo') in select.variables)
+        assert Variable('foo') in select.variables
 
     def test_variables_can_be_strings(self):
         select = self.select.project('foo')
-        self.assert_(Variable('foo') in select.variables)
-
-    def test_variables_arg_adds_variables(self):
-        self.assert_(a in self.select.variables)
+        assert Variable('foo') in select.variables
     
     def test_method_is_generative(self):
-        select = self.select.project(b)
-        self.assert_(select is not self.select)
+        select = self.select.project(v.foo)
+        assert select is not self.select
     
-    def test_method_args_project_variables(self):
-        select = self.select.project(b, c)
-        self.assert_(a not in select.variables)
-        self.assert_(b in select.variables)
-        self.assert_(c in select.variables)
+    def test_method_args_replace_projected_variables(self):
+        select = self.select.project(v.foo, v.bar)
+        assert Variable('foo') in select.variables
+        assert Variable('bar') in select.variables
+        select = self.select.project(v.baz)
+        assert Variable('baz') in select.variables
+        assert Variable('foo') not in select.variables
+        assert Variable('bar') not in select.variables
 
-class TestSelectWhere(unittest.TestCase):
-    def setUp(self):
-        self.select = Select([])
+class TestAddingWhereClauses:
+    def setup(self):
+        self.select = Select(['*'])
     
     def test_default_has_no_clauses(self):
-        self.assert_(not self.select._where)
+        assert not self.select._where
     
     def test_patterns_arg_adds_clauses(self):
-        select = Select([], ('a', TEST.b, 'c'))
-        self.assert_(select._where)
+        select = Select([], (v.x, FOAF.name, v.name))
+        for pattern in select._where:
+            if isinstance(pattern, (Triple, GraphPattern)):
+                break
+        else:
+            assert False
     
     def test_method_is_generative(self):
         select = self.select.where()
-        self.assert_(select is not self.select)
+        assert select is not self.select
     
     def test_method_args_add_clauses(self):
-        select = self.select.where(('a', TEST.b, 'c'), ('x', TEST.y, 'z'))
-        self.assert_(len(select._where[0].patterns) == 2)
+        select = self.select.where(
+            (v.x, FOAF.name, "Alice"), (v.x, FOAF.mbox, v.mbox)
+        )
+        assert len(select._where[-1].patterns) == 2
     
     def test_optional_kwarg_makes_optional_pattern(self):
-        select = self.select.where(('a', TEST.b, 'c'), optional=True)
-        self.assert_(select._where[-1].optional)
+        select = self.select.where((v.x, FOAF.mbox, v.mbox), optional=True)
+        assert select._where[-1].optional
 
-class TestSelectFilter(unittest.TestCase):
-    def setUp(self):
+class TestAddingFilterConstraints:
+    def setup(self):
         self.select = Select([])
     
     def test_method_is_generative(self):
         select = self.select.filter()
-        self.assert_(select is not self.select)
+        assert select is not self.select
 
     def test_method_args_add_filters(self):
-        select = self.select.filter(Expression(2) > 1, Expression('z') > 'a')
-        self.assert_(select._where.filters)
-
+        select = self.select.filter(v.x > 1, v.name == "Alice")
+        assert select._where.filters

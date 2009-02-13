@@ -148,4 +148,3 @@ class TestCreatingVariableExpression:
         assert isinstance(obj, Expression)
         assert isinstance(obj.value, Variable)
         assert obj.value == Variable(name)
-
