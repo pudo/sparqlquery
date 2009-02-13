@@ -81,18 +81,13 @@ class ExpressionCompiler(Compiler):
     def term(self, term, use_prefix=True):
         if term is None:
             return RDF.nil
-        elif isinstance(term, Expression):
-            if term.operator:
-                raise ValueError("Found expression with operator; term expected.")
-            else:
-                return self.term(term.value)
         elif not hasattr(term, 'n3'):
             return self.term(Literal(term))
         elif use_prefix and isinstance(term, URIRef):
             return self.uri(term)
         elif isinstance(term, Literal):
-            if term.datatype in (XSD.int, XSD.integer, XSD.float):
-                return unicode(term)
+            if term.datatype in (XSD.int, XSD.integer, XSD.float, XSD.boolean):
+                return unicode(term).lower()
         return term.n3()
     
     def operator(self, operator):
@@ -152,9 +147,9 @@ class SelectCompiler(Compiler):
     
     def triple(self, triple):
         subject, predicate, object = triple
-        yield self.expression_compiler.term(subject)
-        yield self.expression_compiler.term(predicate)
-        yield self.expression_compiler.term(object)
+        yield self.expression_compiler.compile(subject)
+        yield self.expression_compiler.compile(predicate)
+        yield self.expression_compiler.compile(object)
     
     def clauses(self, select):
         for prefix in self.prefixes():
@@ -254,9 +249,11 @@ class SelectCompiler(Compiler):
         yield 'FILTER'
         constraint = filter.constraint
         bracketed = False
-        if isinstance(constraint, ConditionalExpression):
+        while isinstance(constraint, ConditionalExpression):
             if len(constraint.operands) == 1:
                 constraint = constraint.operands[0]
-        if isinstance(constraint, (BinaryExpression, ConditionalExpression)):
+            else:
+                break
+        if not isinstance(constraint, FunctionCall):
             bracketed = True
         yield join(self.expression(constraint, bracketed))

@@ -48,11 +48,19 @@ class TestCompilingTerm:
         assert self.compiler.compile(value) == self.compiler.compile(literal)
     
     def test_compiling_integer_omits_datatype(self):
-        assert self.compiler.compile(10) == '10'
+        output = self.compiler.compile(10)
+        assert output == '10'
     
     def test_compiling_float_omits_datatype(self):
-        assert self.compiler.compile(10.5) == '10.5'
+        output = self.compiler.compile(10.5)
+        assert output == '10.5'
     
+    def test_compiling_boolean_omits_datatype(self):
+        true_output = self.compiler.compile(True)
+        assert true_output == 'true'
+        false_output = self.compiler.compile(False)
+        assert false_output == 'false'
+
     def test_compiling_term_with_bracketed_true_outputs_brackets(self):
         assert tokens_equal(self.compiler.compile(1, bracketed=True), '(1)')
 
@@ -139,19 +147,19 @@ class TestCompilingRelationalExpression(CompilingExpressionBase):
             output = self.compiler.compile(expr)
             assert tokens_equal(output, '?x %s 2' % token)
 
-class BaseCompilingSelect:
+class CompilingSelectBase:
     PREFIXES = "PREFIX foaf: <http://xmlns.com/foaf/0.1/>"
     
     def setup(self):
         self.compiler = SelectCompiler({FOAF: 'foaf'})
 
-class TestCompilingTriple(BaseCompilingSelect):
+class TestCompilingTriple(CompilingSelectBase):
     def test_compiling_triple_outputs_three_terms(self):
         triple = (v.x, FOAF.name, "Brian")
         assert tokens_equal(
             self.compiler.triple(triple), '?x foaf:name "Brian"')
 
-class TestCompilingSelectModifiers(BaseCompilingSelect):
+class TestCompilingSelectModifiers(CompilingSelectBase):
     def test_compiling_distinct_outputs_distinct_keyword(self):
         select = Select([v.x]).distinct()
         assert tokens_equal(
@@ -187,9 +195,25 @@ class TestCompilingSelectModifiers(BaseCompilingSelect):
             'SELECT ?x WHERE { } ORDER BY ?x'
         )
 
+class TestCompilingFilter(CompilingSelectBase):
+    def test_compiling_filter_conditional_constraint_includes_brackets(self):
+        output = self.compiler.filter(Filter(v.x & True))
+        assert tokens_equal(output, 'FILTER (?x && true)')
+    
+    def test_compiling_filter_unary_constraint_includes_brackets(self):
+        output = self.compiler.filter(Filter(~v.x))
+        assert tokens_equal(output, 'FILTER (!?x)')
 
-class TestCompilingSelect(BaseCompilingSelect):
-    def test_compiling_select_all_outputs_select_all(self):
+    def test_compiling_filter_binary_constraint_includes_brackets(self):
+        output = self.compiler.filter(Filter(v.x == 2))
+        assert tokens_equal(output, 'FILTER (?x = 2)')
+
+    def test_compiling_filter_function_constraint_omits_brackets(self):
+        output = self.compiler.filter(Filter(op.bound(v.x)))
+        assert tokens_equal(output, 'FILTER bound(?x)')
+
+class TestCompilingSelect(CompilingSelectBase):
+    def test_compiling_select_asterisk_outputs_asterisk(self):
         select = Select(['*'])
         assert tokens_equal(
             self.compiler.compile(select), self.PREFIXES, 'SELECT * WHERE { }'
@@ -247,7 +271,7 @@ class TestCompilingSelect(BaseCompilingSelect):
             """
         )
     
-    def test_compiling_filter_outputs_filter(self):
+    def test_compiling_where_outputs_filter(self):
         select = Select([v.x]).where(
             (v.x, FOAF.name, v.name), (v.x, FOAF.mbox, v.mbox)
         ).filter(op.regex(v.name, "Smith"))
@@ -262,3 +286,18 @@ class TestCompilingSelect(BaseCompilingSelect):
             }
             """
         )
+    
+    def test_compiling_where_outputs_all_filters(self):
+        select = Select([v.x]).filter(op.bound(v.x)).filter(v.x > 0).filter(v.x < 10)
+        output = self.compiler.compile(select)
+        assert tokens_equal(
+            output, self.PREFIXES,
+            """
+            SELECT ?x WHERE {
+                FILTER bound(?x) .
+                FILTER (?x > 0) .
+                FILTER (?x < 10)
+            }
+            """
+        )
+
