@@ -2,7 +2,7 @@ import operator
 from rdflib import Namespace
 from telescope.sparql.expressions import VariableExpressionConstructor, and_, or_
 from telescope.sparql.operators import Operator, BuiltinOperatorConstructor
-from telescope.sparql.patterns import union, optional
+from telescope.sparql.patterns import union, optional, TriplesSameSubject
 
 __all__ = ['RDF', 'RDFS', 'XSD', 'FN', 'is_a', 'v', 'op', 'fn', 'asc', 'desc',
            'and_', 'or_', 'union', 'optional']
@@ -18,4 +18,7 @@ op = BuiltinOperatorConstructor()
 fn = op(FN)
 asc = Operator('ASC')
 desc = Operator('DESC')
+
+def subject(term):
+    return TriplesSameSubject(term)
 

@@ -1,7 +1,8 @@
+import warnings
 from telescope.sparql.expressions import and_
 
-__all__ = ['Triple', 'Filter', 'GraphPattern', 'GroupGraphPattern',
-           'UnionGraphPattern', 'union', 'optional']
+__all__ = ['Triple', 'TriplesSameSubject', 'Filter', 'GraphPattern',
+           'GroupGraphPattern', 'UnionGraphPattern', 'union', 'optional']
 
 class Triple(object):
     def __init__(self, subject, predicate, object):
@@ -21,6 +22,37 @@ class Triple(object):
             return obj
         else:
             return cls(*obj)
+
+class TriplesBlock(object):
+    pass
+
+class TriplesSameSubject(object):
+    def __init__(self, subject, predicate_object_list=()):
+        self.subject = subject
+        self.predicate_object_list = tuple(predicate_object_list)
+    
+    def _clone(self, **kwargs):
+        clone = self.__class__.__new__(self.__class__)
+        clone.__dict__.update(self.__dict__)
+        clone.__dict__.update(kwargs)
+        return clone
+
+    def __getitem__(self, *predicate_object_pairs):
+        predicate_object_list = list(self.predicate_object_list)
+        for pair in predicate_object_pairs:
+            if isinstance(pair, slice):
+                if pair.step is not None:
+                    warnings.warn("step value %r ignored." % (pair.step,))
+                pred, obj = pair.start, pair.stop
+            else:
+                pred, obj = pair
+            predicate_object_list.append((pred, obj))
+        return self._clone(predicate_object_list=tuple(predicate_object_list))
+
+    def __call__(self, predicate_object_pairs):
+        predicate_object_list = list(self.predicate_object_list)
+        predicate_object_list.extend(predicate_object_pairs)
+        return self._clone(predicate_object_list=tuple(predicate_object_list))
 
 class Filter(object):
     def __init__(self, constraint):
@@ -84,7 +116,7 @@ class UnionGraphPattern(GraphPattern):
     def __init__(self, patterns):
         GraphPattern.__init__(self, patterns)
 
-# Helpers. Users should import these from telescope.sparql.helpers.
+# Helpers. Normally imported from telescope.sparql.helpers.
 
 def union(*patterns):
     from telescope.sparql.patterns import UnionGraphPattern, GraphPattern

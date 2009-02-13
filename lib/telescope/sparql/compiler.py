@@ -6,12 +6,12 @@ from telescope.sparql.operators import FunctionCall
 from telescope.sparql.patterns import *
 from telescope.sparql.select import *
 from telescope.sparql.helpers import RDF, XSD, is_a
-from telescope.sparql.util import defrag
+from telescope.sparql.util import defrag, to_variable
 
 __all__ = ['Compiler', 'ExpressionCompiler', 'SelectCompiler']
 
 def join(tokens, sep=' '):
-    return sep.join([token for token in tokens if token])
+    return sep.join([unicode(token) for token in tokens if token])
 
 class Compiler(object):
     def __init__(self, prefix_map=None):
@@ -183,11 +183,13 @@ class SelectCompiler(Compiler):
     
     def limit(self, select):
         if select._limit is not None:
-            yield 'LIMIT %d' % (select._limit,)
+            yield 'LIMIT'
+            yield select._limit
     
     def offset(self, select):
         if select._offset not in (0, None):
-            yield 'OFFSET %d' % (select._offset,)
+            yield 'OFFSET'
+            yield select._offset
     
     def order_by(self, select):
         if select._order_by:
