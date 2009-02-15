@@ -62,7 +62,7 @@ class TestAddingWhereClauses:
     
     def test_patterns_arg_adds_clauses(self):
         select = Select([], (v.x, FOAF.name, v.name))
-        for pattern in select._where:
+        for pattern in select._where.patterns:
             if isinstance(pattern, (Triple, GraphPattern)):
                 break
         else:
@@ -76,11 +76,11 @@ class TestAddingWhereClauses:
         select = self.select.where(
             (v.x, FOAF.name, "Alice"), (v.x, FOAF.mbox, v.mbox)
         )
-        assert len(select._where[-1].patterns) == 2
+        assert len(select._where.patterns[-1].patterns) == 2
     
     def test_optional_kwarg_makes_optional_pattern(self):
         select = self.select.where((v.x, FOAF.mbox, v.mbox), optional=True)
-        assert select._where[-1].optional
+        assert select._where.patterns[-1].optional
 
 class TestAddingFilterConstraints:
     def setup(self):

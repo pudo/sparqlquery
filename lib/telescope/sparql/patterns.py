@@ -26,7 +26,7 @@ class Triple(object):
 class TriplesBlock(object):
     pass
 
-class TriplesSameSubject(object):
+class TriplesSameSubject(TriplesBlock):
     def __init__(self, subject, predicate_object_list=()):
         self.subject = subject
         self.predicate_object_list = tuple(predicate_object_list)
@@ -36,22 +36,29 @@ class TriplesSameSubject(object):
         clone.__dict__.update(self.__dict__)
         clone.__dict__.update(kwargs)
         return clone
-
-    def __getitem__(self, *predicate_object_pairs):
+    
+    def _to_predicate_object_tuple(self, obj):
+        if isinstance(obj, slice):
+            if obj.step is not None:
+                warnings.warn("step value ignored: %r" % (obj.step,))
+            return (obj.start, obj.stop)
+        elif isinstance(obj, tuple) and len(obj) == 2:
+            try:
+                self._to_predicate_object_tuple(obj[0])
+            except ValueError:
+                return tuple(obj)
+        raise ValueError("could not convert to predicate-object pair: "
+                         "%r is not a slice or valid 2-tuple" % (obj,))
+    
+    def __getitem__(self, predicate_object_pairs):
         predicate_object_list = list(self.predicate_object_list)
-        for pair in predicate_object_pairs:
-            if isinstance(pair, slice):
-                if pair.step is not None:
-                    warnings.warn("step value %r ignored." % (pair.step,))
-                pred, obj = pair.start, pair.stop
-            else:
-                pred, obj = pair
-            predicate_object_list.append((pred, obj))
-        return self._clone(predicate_object_list=tuple(predicate_object_list))
-
-    def __call__(self, predicate_object_pairs):
-        predicate_object_list = list(self.predicate_object_list)
-        predicate_object_list.extend(predicate_object_pairs)
+        try:
+            pair = self._to_predicate_object_tuple(predicate_object_pairs)
+        except ValueError:
+            pairs = map(self._to_predicate_object_tuple, predicate_object_pairs)
+            predicate_object_list.extend(pairs)
+        else:
+                predicate_object_list.append(pair)
         return self._clone(predicate_object_list=tuple(predicate_object_list))
 
 class Filter(object):
@@ -65,25 +72,23 @@ class GraphPattern(object):
     def __init__(self, patterns):
         self.patterns = []
         self.filters = []
-        self.add(*patterns)
+        self.pattern(*patterns)
     
-    def add(self, *patterns):
+    def pattern(self, *patterns):
         for pattern in patterns:
             if not isinstance(pattern, (Triple, GraphPattern)):
                 pattern = Triple.from_obj(pattern)
             self.patterns.append(pattern)
     
-    def filter(self, *expressions):
-        self.filters.append(Filter(and_(*expressions)))
+    def filter(self, *constraints):
+        constraints = list(constraints)
+        for i, constraint in enumerate(constraints):
+            if isinstance(constraint, Filter):
+                constraints[i] = constraint.constraint
+        self.filters.append(Filter(and_(*constraints)))
     
     def __nonzero__(self):
-        return bool(self.patterns)
-    
-    def __len__(self):
-        return len(self.patterns)
-    
-    def __getitem__(self, item):
-        return self.patterns[item]
+        return bool(self.patterns or self.filters)
     
     def __or__(self, other):
         return UnionGraphPattern([self, GraphPattern.from_obj(other)])
@@ -95,6 +100,7 @@ class GraphPattern(object):
         clone = self.__class__.__new__(self.__class__)
         clone.__dict__.update(self.__dict__)
         clone.patterns = self.patterns[:]
+        clone.filters = self.filters[:]
         clone.__dict__.update(kwargs)
         return clone
     

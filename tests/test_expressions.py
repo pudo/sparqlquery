@@ -56,7 +56,7 @@ class TestPrintingExpression:
             value = n3_type('test')
             value_repr = value.n3()
             expr = Expression(value)
-            assert repr(expr) == "Expression(%r)" % value_repr
+            assert repr(expr) == "Expression(%s)" % value_repr
 
 class TestPrintingBinaryExpression:
     def test_repr_args_print_with_repr(self):
@@ -143,7 +143,10 @@ class TestCreatingVariableExpression:
     def test_getitem_returns_variable_expression(self):
         foo = self.v['foo']
         self.assert_is_variable_expression(foo, 'foo')
-
+    
+    def test_variable_name_must_be_a_string(self):
+        assert_raises(TypeError, self.v, 1)
+    
     def assert_is_variable_expression(self, obj, name):
         assert isinstance(obj, Expression)
         assert isinstance(obj.value, Variable)

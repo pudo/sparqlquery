@@ -21,4 +21,3 @@ desc = Operator('DESC')
 
 def subject(term):
     return TriplesSameSubject(term)
-

@@ -40,7 +40,6 @@ class Select(object):
         self._limit = kwargs.pop('limit', None)
         self._offset = kwargs.pop('offset', None)
         self._order_by = kwargs.pop('order_by', None)
-        self.graph = kwargs.pop('graph', None)
         if kwargs:
             key, value = kwargs.popitem()
             raise TypeError("Unexpected keyword argument: %r" % key)
@@ -80,7 +79,7 @@ class Select(object):
         clone = self._clone()
         if patterns:
             graph_pattern = GroupGraphPattern.from_obj(patterns, **kwargs)
-            clone._where.add(graph_pattern)
+            clone._where.pattern(graph_pattern)
         return clone
     
     def filter(self, *constraints, **kwargs):

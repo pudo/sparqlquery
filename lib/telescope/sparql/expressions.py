@@ -1,3 +1,4 @@
+import weakref
 import operator
 from rdflib import Variable
 
@@ -21,10 +22,12 @@ class Expression(object):
         value = self.value
         if hasattr(value, 'n3'):
             value = value.n3()
-        if self.operator:
-            return "Expression(%r, %r)" % (value, self.operator)
         else:
-            return "Expression(%r)" % (value,)
+            value = repr(value)
+        if self.operator:
+            return "Expression(%s, %r)" % (value, self.operator)
+        else:
+            return "Expression(%s)" % (value,)
 
     def _clone(self, **kwargs):
         clone = self.__class__.__new__(self.__class__)
@@ -109,12 +112,21 @@ def or_(*operands):
     return ConditionalExpression(operator.or_, operands)
 
 class VariableExpressionConstructor(object):
+    _VARIABLES = weakref.WeakValueDictionary()
+    
     def __call__(self, name):
-        return Expression(Variable(name))
-
+        if isinstance(name, basestring):
+            name = unicode(name)
+        else:
+            raise TypeError("variable names must be strings")
+        try:
+            expr = self._VARIABLES[name]
+        except KeyError:
+            expr = self._VARIABLES[name] = Expression(Variable(name))
+        return expr
+    
     def __getattr__(self, name):
         return self(name)
-
+    
     def __getitem__(self, name):
         return self(name)
-
