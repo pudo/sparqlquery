@@ -6,7 +6,7 @@ from telescope.sparql.operators import FunctionCall
 from telescope.sparql.patterns import *
 from telescope.sparql.select import *
 from telescope.sparql.helpers import RDF, XSD, is_a
-from telescope.sparql.util import defrag, to_variable
+from telescope.sparql.util import defrag, to_variable, to_list
 
 __all__ = ['Compiler', 'ExpressionCompiler', 'SelectCompiler']
 
@@ -105,16 +105,12 @@ class ExpressionCompiler(Compiler):
         yield ')'
     
     def conditional(self, expression):
-        for expr in expression.operands:
-            try:
-                operator
-            except NameError:
-                operator = self.operator(expression.operator)
-            else:
+        operator = self.operator(expression.operator)
+        for i, expr in enumerate(expression.operands):
+            if i:
                 yield operator
             bracketed = self.precedence_lt(expr, expression)
             yield self.compile(expr, bracketed)
-        del operator
     
     def binary(self, expression):
         left_bracketed = self.precedence_lt(expression.left, expression)
@@ -140,16 +136,23 @@ class SelectCompiler(Compiler):
         self.expression_compiler = ExpressionCompiler(self.prefix_map)
     
     def compile(self, select):
+        """Compile `select` and return the resulting string.
+        
+        `select` is a `telescope.sparql.select.Select` instance.
+        
+        """
         return join(self.clauses(select), '\n')
     
     def expression(self, expression, bracketed=False):
-        yield self.expression_compiler.compile(expression, bracketed)
-    
-    def triple(self, triple):
-        subject, predicate, object = triple
-        yield self.expression_compiler.compile(subject)
-        yield self.expression_compiler.compile(predicate)
-        yield self.expression_compiler.compile(object)
+        """
+        Compile `expression` with this instance's `expression_compiler` and
+        return (not yield) the resulting string.
+        
+        If `bracketed` is true, the resulting string will be enclosed in
+        parentheses.
+        
+        """
+        return self.expression_compiler.compile(expression, bracketed)
     
     def clauses(self, select):
         for prefix in self.prefixes():
@@ -195,14 +198,14 @@ class SelectCompiler(Compiler):
         if select._order_by:
             yield 'ORDER BY'
             for expression in select._order_by:
-                yield join(self.expression(expression))
+                yield self.expression(expression)
     
     def projection(self, select):
         if '*' in select.variables:
             yield '*'
         else:
             for variable in select.variables:
-                yield self.expression_compiler.term(variable)
+                yield self.expression(variable)
     
     def where(self, select):
         yield 'WHERE'
@@ -223,16 +226,15 @@ class SelectCompiler(Compiler):
                 yield join(self.triple(pattern))
                 if patterns or filters:
                     yield '.'
+            elif isinstance(pattern, TriplesSameSubject):
+                yield join(self.triples_same_subject(pattern))
+                if patterns or filters:
+                    yield '.'
             elif isinstance(pattern, UnionGraphPattern):
-                for union_pattern in pattern.patterns:
-                    try:
-                        union_sep
-                    except NameError:
-                        union_sep = 'UNION'
-                    else:
-                        yield union_sep
-                    yield join(self.graph_pattern(union_pattern, True))
-                del union_sep
+                for i, alternative in enumerate(pattern.patterns):
+                    if i:
+                        yield 'UNION'
+                    yield join(self.graph_pattern(alternative, True))
             elif isinstance(pattern, GraphPattern):
                 token = None
                 for token in self.graph_pattern(pattern, False):
@@ -247,6 +249,26 @@ class SelectCompiler(Compiler):
         if braces:
             yield '}'
     
+    def triple(self, triple):
+        subject, predicate, object = triple
+        yield self.expression(subject)
+        yield self.expression(predicate)
+        yield self.expression(object)
+    
+    def triples_same_subject(self, triples):
+        yield self.expression(triples.subject)
+        yield join(self.predicate_object_list(triples.predicate_object_list))
+    
+    def predicate_object_list(self, predicate_object_list):
+        for i, (predicate, object_list) in enumerate(predicate_object_list):
+            if i:
+                yield ';'
+            yield self.expression(predicate)
+            for j, object in enumerate(to_list(object_list)):
+                if j:
+                    yield ','
+                yield self.expression(object)
+    
     def filter(self, filter):
         yield 'FILTER'
         constraint = filter.constraint
@@ -258,4 +280,4 @@ class SelectCompiler(Compiler):
                 break
         if not isinstance(constraint, FunctionCall):
             bracketed = True
-        yield join(self.expression(constraint, bracketed))
+        yield self.expression(constraint, bracketed)

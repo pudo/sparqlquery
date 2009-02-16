@@ -148,16 +148,28 @@ class TestCompilingRelationalExpression(CompilingExpressionBase):
             assert tokens_equal(output, '?x %s 2' % token)
 
 class CompilingSelectBase:
-    PREFIXES = "PREFIX foaf: <http://xmlns.com/foaf/0.1/>"
+    PREFIXES = ["PREFIX foaf: <http://xmlns.com/foaf/0.1/>",
+                "PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>"]
     
     def setup(self):
-        self.compiler = SelectCompiler({FOAF: 'foaf'})
+        self.compiler = SelectCompiler({FOAF: 'foaf', RDF: 'rdf'})
 
 class TestCompilingTriple(CompilingSelectBase):
-    def test_compiling_triple_outputs_three_terms(self):
-        triple = (v.x, FOAF.name, "Brian")
+    def test_compiling_outputs_whitespace_joined_terms(self):
+        triple = (v.x, FOAF.name, "Alice")
         assert tokens_equal(
-            self.compiler.triple(triple), '?x foaf:name "Brian"')
+            self.compiler.triple(triple), '?x foaf:name "Alice"'
+        )
+
+class TestCompilingTriplesSameSubject(CompilingSelectBase):
+    def test_compiling_outputs_semicolon_joined_predicate_object_pairs(self):
+        triples = TriplesSameSubject(v.x)[RDF.type: FOAF.Person,
+                                          FOAF.name: "Alice",
+                                          FOAF.mbox: v.mbox]
+        assert tokens_equal(
+            self.compiler.triples_same_subject(triples),
+            '?x rdf:type foaf:Person ; foaf:name "Alice" ; foaf:mbox ?mbox'
+        )
 
 class TestCompilingSelectModifiers(CompilingSelectBase):
     def test_compiling_distinct_outputs_distinct_keyword(self):

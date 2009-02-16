@@ -71,8 +71,8 @@ class Select(object):
         
         Each argument may be a variable or a sequence of variables, and each
         variable is converted to a `rdflib.Variable` instance using
-        `to_variable` (which means variables may be specified as `Expression`
-        instances or strings).
+        `to_variable` (which means variables may also be specified as strings
+        and `Expression` instances).
         
         If the keyword-only argument `add` is true, the specified variables will
         be added to the projection instead of replacing the current projection.
