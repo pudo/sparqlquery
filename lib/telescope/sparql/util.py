@@ -9,12 +9,18 @@ def defrag(uri):
         namespace, fragment = uri.rsplit('/', 1)
         return ('%s/' % namespace, fragment)
 
-def to_variable(value):
-    while isinstance(value, Expression):
-        value = value.value
-    if value and not isinstance(value, Variable):
-        value = Variable(value)
-    return value
+def to_variable(obj):
+    while isinstance(obj, Expression):
+        obj = obj.value
+    if isinstance(obj, Variable):
+        return obj
+    elif isinstance(obj, basestring):
+        if obj:
+            return Variable(obj)
+        else:
+            raise ValueError("Empty variable name.")
+    else:
+        raise TypeError("Variable names must be strings.")
 
 def to_list(obj):
     if not isinstance(obj, basestring):

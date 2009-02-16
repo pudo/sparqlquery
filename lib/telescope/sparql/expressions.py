@@ -118,7 +118,7 @@ class VariableExpressionConstructor(object):
         if isinstance(name, basestring):
             name = unicode(name)
         else:
-            raise TypeError("variable names must be strings")
+            raise TypeError("Variable names must be strings.")
         try:
             expr = self._VARIABLES[name]
         except KeyError:

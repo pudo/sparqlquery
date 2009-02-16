@@ -65,17 +65,37 @@ class Select(object):
         return clone
     
     def project(self, *variables, **kwargs):
+        """
+        Return a new `Select` with the given variables projected in the SELECT
+        clause.
+        
+        Each argument may be a variable or a sequence of variables, and each
+        variable is converted to a `rdflib.Variable` instance using
+        `to_variable` (which means variables may be specified as `Expression`
+        instances or strings).
+        
+        If the keyword-only argument `add` is true, the specified variables will
+        be added to the projection instead of replacing the current projection.
+        
+        """
         add = kwargs.pop('add', False)
-        projection = []
+        projection = add and list(self.variables) or []
         for arg in variables:
             for variable in map(to_variable, to_list(arg)):
-                if variable:
-                    projection.append(variable)
-        if add:
-            projection[:0] = self.variables
+                projection.append(variable)
         return self._clone(variables=tuple(projection))
     
     def where(self, *patterns, **kwargs):
+        """Return a new `Select` with the given patterns in the WHERE clause.
+        
+        Each argument may be a triple (a 3-tuple or `Triple` instances) or a
+        `GraphPattern` instance.  The patterns are added to the WHERE clause in
+        the order specified.
+        
+        If the keyword-only `optional` argument is true, add all given patterns
+        to an OPTIONAL graph pattern.
+        
+        """
         clone = self._clone()
         if patterns:
             graph_pattern = GroupGraphPattern.from_obj(patterns, **kwargs)
@@ -83,6 +103,17 @@ class Select(object):
         return clone
     
     def filter(self, *constraints, **kwargs):
+        """Return a new `Select` with the given constraints in the WHERE clause.
+        
+        Each positional argument may be an `Expression`, `Filter`, or literal.
+        Each keyword argument specifies a binary '=' expression, where the
+        argument name is the variable name on the left and the value is the
+        expression on the right.
+        
+        All constraints given in a single call to this method will be combined
+        (with '&&') into a single conditional expression.
+        
+        """
         constraints = list(constraints)
         for key, value in kwargs.iteritems():
             constraints.append(v[key] == value)
@@ -91,40 +122,65 @@ class Select(object):
         return clone
     
     def limit(self, number):
-        """Return a new `Select` with LIMIT `number` applied."""
+        """Return a new `Select` with a LIMIT `number` clause.
+        
+        If `number` is None, the query will not have a LIMIT clause.
+        
+        """
         return self._clone(_limit=number)
     
     def offset(self, number):
-        """Return a new `Select` with OFFSET `number` applied."""
+        """Return a new `Select` with an OFFSET `number` clause.
+        
+        If `number` is None, the query will not have an OFFSET clause.
+        
+        """
         return self._clone(_offset=number)
     
     def order_by(self, *variables):
-        """Return a new `Select` with ORDER BY `variables` applied."""
+        """Return a new `Select` with an ORDER BY `variables` clause.
+        
+        If the singular argument None is given, the query will not have an
+        ORDER BY clause.
+        
+        """
         return self._clone(_order_by=variables)
     
     def distinct(self, value=True):
-        """Return a new `Select` with DISTINCT modified according to `value`.
+        """
+        Return a new `Select` with the DISTINCT modifier (or without it if
+        `value` is false).
         
-        If `value` is True (the default), then `reduced` is forced to False.
+        If `value` is true (the default), then `reduced` is forced to False.
+        
         """
         return self._clone(_distinct=value, _reduced=not value and self._reduced)
     
     def reduced(self, value=True):
-        """Return a new `Select` with REDUCED modified according to `value`.
+        """Return a new `Select` with the REDUCED modifier (or without it if
+        `value` is false).
         
-        If `value` is True (the default), then `distinct` is forced to False.
+        If `value` is true (the default), then `distinct` is forced to False.
+        
         """
         return self._clone(_reduced=value, _distinct=not value and self._distinct)
     
     def execute(self, graph, prefix_map=None):
+        """Compile and execute this query on `graph`.
+        
+        If `prefix_map` is given, use it as a mapping from `rdflib.Namespace`
+        instances to prefixed names to use in the compiled query.
+        
+        """
         return graph.query(unicode(self.compile(prefix_map)))
     
     def compile(self, prefix_map=None):
+        """Compile this query and return the resulting string.
+        
+        If `prefix_map` is given, use it as a mapping from `rdflib.Namespace`
+        instances to prefixed names to use in the compiled query.
+        
+        """
         from telescope.sparql.compiler import SelectCompiler
         compiler = SelectCompiler(prefix_map)
         return compiler.compile(self)
-
-if __name__ == '__main__':
-    import doctest
-    doctest.testmod()
-

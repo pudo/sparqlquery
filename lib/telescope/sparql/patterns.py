@@ -1,5 +1,5 @@
 import warnings
-from telescope.sparql.expressions import and_
+from telescope.sparql.expressions import Expression, and_
 
 __all__ = ['Triple', 'TriplesSameSubject', 'Filter', 'GraphPattern',
            'GroupGraphPattern', 'UnionGraphPattern', 'union', 'optional']
@@ -40,14 +40,14 @@ class TriplesSameSubject(TriplesBlock):
     def _to_predicate_object_tuple(self, obj):
         if isinstance(obj, slice):
             if obj.step is not None:
-                warnings.warn("step value ignored: %r" % (obj.step,))
+                warnings.warn("Step value ignored: %r" % (obj.step,))
             return (obj.start, obj.stop)
         elif isinstance(obj, tuple) and len(obj) == 2:
             try:
                 self._to_predicate_object_tuple(obj[0])
             except ValueError:
                 return tuple(obj)
-        raise ValueError("could not convert to predicate-object pair: "
+        raise ValueError("Could not convert to predicate-object pair: "
                          "%r is not a slice or valid 2-tuple" % (obj,))
     
     def __getitem__(self, predicate_object_pairs):
