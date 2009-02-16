@@ -4,7 +4,7 @@ from telescope.mapper import Mapper, mapper
 from telescope.properties import Property, Relationship
 from telescope.query import Query
 from telescope.session import Session
-import util
+import helpers
 
 RDF = Namespace('http://www.w3.org/1999/02/22-rdf-syntax-ns#')
 FOAF = Namespace('http://xmlns.com/foaf/0.1/')
@@ -15,7 +15,7 @@ class TestMapper:
             pass
         self.Person = Person
         self.mapper = mapper(Person, FOAF.Person)
-        self.session = Session(util.graph('foaf-01.rdf'))
+        self.session = Session(helpers.graph('foaf-01.rdf'))
     
     def test_mapper_helper_returns_mapper(self):
         assert isinstance(self.mapper, Mapper)
@@ -29,7 +29,7 @@ class TestQuery:
             pass
         self.Person = Person
         self.mapper = mapper(Person, FOAF.Person)
-        self.session = Session(util.graph('foaf-01.rdf'))
+        self.session = Session(helpers.graph('foaf-01.rdf'))
     
     def test_session_query_returns_query_instance(self):
         query = self.session.query(self.Person)
@@ -50,7 +50,7 @@ class TestMappedProperties:
             'name': Property(FOAF.name),
             'mbox': Property(FOAF.mbox)
         })
-        self.session = Session(util.graph('foaf-01.rdf'))
+        self.session = Session(helpers.graph('foaf-01.rdf'))
     
     def test_class_has_property_attrs(self):
         assert hasattr(self.Person, 'name')

@@ -20,7 +20,7 @@ class Mapper(object):
             select = type_or_select
         else:
             rdf_type = type_or_select
-            select = Select([identifier], (identifier, RDF.type, rdf_type))
+            select = Select([identifier], [(identifier, RDF.type, rdf_type)])
         
         if identifier not in select.variables:
             raise RuntimeError("select must include identifier")

@@ -61,7 +61,7 @@ class TestAddingWhereClauses:
         assert not self.select._where
     
     def test_patterns_arg_adds_clauses(self):
-        select = Select([], (v.x, FOAF.name, v.name))
+        select = Select([], [(v.x, FOAF.name, v.name)])
         for pattern in select._where.patterns:
             if isinstance(pattern, (Triple, GraphPattern)):
                 break
