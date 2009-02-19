@@ -1,9 +1,11 @@
 from operator import itemgetter
 from rdflib import Literal, URIRef, Namespace
+from telescope.exceptions import *
 from telescope.sparql.expressions import *
 from telescope.sparql import operators
 from telescope.sparql.operators import FunctionCall
 from telescope.sparql.patterns import *
+from telescope.sparql.query import *
 from telescope.sparql.queryforms import *
 from telescope.sparql.helpers import RDF, XSD, is_a
 from telescope.sparql.util import defrag, to_variable, to_list
@@ -130,18 +132,41 @@ class ExpressionCompiler(Compiler):
             yield self.operator(expression.operator)
         yield self.compile(expression.value)
 
-class SelectCompiler(Compiler):
+
+class QueryCompiler(Compiler):
+    HANDLERS = {}
+
+    @classmethod
+    def handle(cls, query_type):
+        cls.HANDLERS[query_type] = cls
+
+    @classmethod
+    def get_handler(cls, query_or_type):
+        if isinstance(query_or_type, SPARQLQuery):
+            return cls.get_handler(type(query_or_type))
+        elif isinstance(query_or_type, type):
+            try:
+                return cls.HANDLERS[query_or_type]
+            except KeyError:
+                type_base = query_or_type.__base__
+                if isinstance(type_base, type):
+                    return cls.get_handler(type_base)
+                else:
+                    raise
+        else:
+            raise TypeError
+
     def __init__(self, prefix_map=None):
         Compiler.__init__(self, prefix_map)
         self.expression_compiler = ExpressionCompiler(self.prefix_map)
     
-    def compile(self, select):
-        """Compile `select` and return the resulting string.
+    def compile(self, query):
+        """Compile `query` and return the resulting string.
         
-        `select` is a `telescope.sparql.select.Select` instance.
+        `query` is a `telescope.sparql.query.SPARQLQuery` instance.
         
         """
-        return join(self.clauses(select), '\n')
+        return join(self.clauses(query), '\n')
     
     def expression(self, expression, bracketed=False):
         """
@@ -154,14 +179,10 @@ class SelectCompiler(Compiler):
         """
         return self.expression_compiler.compile(expression, bracketed)
     
-    def clauses(self, select):
-        for prefix in self.prefixes():
-            yield prefix
-        yield join(self.select(select))
-        yield join(self.where(select))
-        yield join(self.order_by(select))
-        yield join(self.limit(select))
-        yield join(self.offset(select))
+    def clauses(self, query):
+        yield join(self.prefixes(), '\n')
+        yield join(self.query_form(query))
+        yield join(self.where(query))
     
     def prefixes(self):
         prefixes = sorted(self.prefix_map.iteritems(), key=itemgetter(1))
@@ -173,40 +194,9 @@ class SelectCompiler(Compiler):
         yield '%s:' % (prefix,)
         yield self.expression_compiler.term(namespace, False)
     
-    def select(self, select):
-        yield 'SELECT'
-        yield join(self.unique(select))
-        yield join(self.projection(select))
-    
-    def unique(self, select):
-        if select._distinct:
-            yield 'DISTINCT'
-        elif select._reduced:
-            yield 'REDUCED'
-    
-    def limit(self, select):
-        if select._limit is not None:
-            yield 'LIMIT'
-            yield select._limit
-    
-    def offset(self, select):
-        if select._offset not in (0, None):
-            yield 'OFFSET'
-            yield select._offset
-    
-    def order_by(self, select):
-        if select._order_by:
-            yield 'ORDER BY'
-            for expression in select._order_by:
-                yield self.expression(expression)
-    
-    def projection(self, select):
-        if '*' in select.projection:
-            yield '*'
-        else:
-            for variable in select.projection:
-                yield self.expression(variable)
-    
+    def query_form(self, query):
+        yield query.query_form
+
     def where(self, select):
         yield 'WHERE'
         yield join(self.graph_pattern(select._where))
@@ -281,3 +271,66 @@ class SelectCompiler(Compiler):
         if not isinstance(constraint, FunctionCall):
             bracketed = True
         yield self.expression(constraint, bracketed)
+
+
+class SolutionModifierSupportingQueryCompiler(QueryCompiler):
+    def clauses(self, query):
+        yield join(self.prefixes(), '\n')
+        yield join(self.query_form(query))
+        yield join(self.where(query))
+        yield join(self.order_by(query))
+        yield join(self.limit(query))
+        yield join(self.offset(query))
+
+    def order_by(self, query):
+        if query._order_by:
+            yield 'ORDER BY'
+            for expression in query._order_by:
+                yield self.expression(expression)
+
+    def limit(self, query):
+        if query._limit is not None:
+            yield 'LIMIT'
+            yield query._limit
+    
+    def offset(self, query):
+        if query._offset not in (0, None):
+            yield 'OFFSET'
+            yield query._offset
+
+
+class ProjectionSupportingQueryCompiler(SolutionModifierSupportingQueryCompiler):
+    def query_form(self, query):
+        for token in super(ProjectionSupportingQueryCompiler, self).query_form(query):
+            yield token
+        for token in self.projection(query):
+            yield token
+
+    def projection(self, query):
+        if '*' in query.projection:
+            yield '*'
+        else:
+            for term in query.projection:
+                yield self.expression(term)
+
+
+class SelectCompiler(ProjectionSupportingQueryCompiler):
+    def projection(self, query):
+        if query._distinct:
+            yield 'DISTINCT'
+        elif query._reduced:
+            yield 'REDUCED'
+        for token in super(SelectCompiler, self).projection(query):
+            yield token
+
+
+class ConstructCompiler(SolutionModifierSupportingQueryCompiler):
+    pass
+
+
+QueryCompiler.handle(SPARQLQuery)
+SolutionModifierSupportingQueryCompiler.handle(SolutionModifierSupportingQuery)
+ProjectionSupportingQueryCompiler.handle(ProjectionSupportingQueryCompiler)
+SelectCompiler.handle(Select)
+ConstructCompiler.handle(Construct)
+

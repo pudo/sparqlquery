@@ -73,9 +73,11 @@ class SPARQLQuery(object):
         instances to prefixed names to use in the compiled query.
         
         """
-        from telescope.sparql.compiler import SelectCompiler
-        compiler = SelectCompiler(prefix_map)
+        from telescope.sparql.compiler import QueryCompiler
+        handler = QueryCompiler.get_handler(self)
+        compiler = handler(prefix_map)
         return compiler.compile(self)
+
 
 class SolutionModifierSupportingQuery(SPARQLQuery):
     """
@@ -127,6 +129,7 @@ class SolutionModifierSupportingQuery(SPARQLQuery):
         """
         return self._clone(_offset=offset)
 
+
 class ProjectionSupportingQuery(SolutionModifierSupportingQuery):
     """Programmatically build a SPARQL query that supports projection."""
     
@@ -160,3 +163,4 @@ class ProjectionSupportingQuery(SolutionModifierSupportingQuery):
             for variable in map(to_variable, to_list(arg)):
                 projection.append(variable)
         return self._clone(projection=tuple(projection))
+

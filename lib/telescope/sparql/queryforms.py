@@ -6,9 +6,12 @@ __all__ = ['Ask', 'Construct', 'Select', 'Describe']
 class Ask(SPARQLQuery):
     """Programmatically build a SPARQL ASK query."""
 
+    query_form = 'ASK'
 
 class Construct(SolutionModifierSupportingQuery):
     """Programmatically build a SPARQL CONSTRUCT query."""
+
+    query_form = 'CONSTRUCT'
     
     def __init__(self, template, pattern=None, order_by=None, limit=None,
                  offset=None):
@@ -22,6 +25,8 @@ class Construct(SolutionModifierSupportingQuery):
 class Select(ProjectionSupportingQuery):
     """Programmatically build a SPARQL SELECT query."""
     
+    query_form = 'SELECT'
+
     def __init__(self, projection, pattern=None, distinct=False,
                  reduced=False, order_by=None, limit=None, offset=None):
         super(Select, self).__init__(projection, pattern, order_by=order_by,
@@ -53,3 +58,6 @@ class Select(ProjectionSupportingQuery):
 
 class Describe(ProjectionSupportingQuery):
     """Programmatically build a SPARQL DESCRIBE query."""
+
+    query_form = 'DESCRIBE'
+
