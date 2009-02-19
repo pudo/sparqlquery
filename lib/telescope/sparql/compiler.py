@@ -325,7 +325,23 @@ class SelectCompiler(ProjectionSupportingQueryCompiler):
 
 
 class ConstructCompiler(SolutionModifierSupportingQueryCompiler):
-    pass
+    def query_form(self, query):
+        for token in super(ConstructCompiler, self).query_form(query):
+            yield token
+        for token in self.template(query):
+            yield token
+    
+    def template(self, query):
+        yield '{'
+        template = query._template
+        if isinstance(template, basestring):
+            yield template
+        else:
+            if not isinstance(template, GraphPattern):
+                template = GroupGraphPattern.from_obj(template)
+            for token in self.graph_pattern(template, False):
+                yield token
+        yield '}'
 
 
 QueryCompiler.handle(SPARQLQuery)
