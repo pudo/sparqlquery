@@ -16,7 +16,8 @@ class Construct(SolutionModifierSupportingQuery):
     
     def __init__(self, template, pattern=None, order_by=None, limit=None,
                  offset=None):
-        super(Construct, self).__init__(pattern, order_by, limit, offset)
+        super(Construct, self).__init__(pattern, order_by=order_by,
+                                        limit=limit, offset=offset)
         self._template = template
 
     def _get_compiler_class(self):
