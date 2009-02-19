@@ -1,5 +1,24 @@
+"""
+Classes for compiling SPARQL query strings from Python objects.
+
+Compiling is split up among two compilers:
+
+  * `ExpressionCompiler` compiles SPARQL expressions (terms, conditional
+    expressions, relational expressions, operators...)
+  * `QueryCompiler` compiles SPARQL queries (subclasses of `SPARQLQuery`)
+
+Compilers in this module typically have a method for each SPARQL clause
+or query component.  These methods read the `SPARQLQuery` instance and
+yield the necessary tokens for that clause or component.  Other methods
+then join the yielded tokens.
+
+For example, `QueryCompiler.compile()` joins the tokens yielded by calling
+`QueryCompiler.clauses()`, which joins tokens yielded by methods like
+`QueryCompiler.prefixes()` and `QueryCompiler.query_form()`.
+
+"""
 from operator import itemgetter
-from rdflib import Literal, URIRef, Namespace
+from rdflib import Literal, URIRef
 from telescope.exceptions import *
 from telescope.sparql.expressions import *
 from telescope.sparql import operators
@@ -8,7 +27,7 @@ from telescope.sparql.patterns import *
 from telescope.sparql.query import *
 from telescope.sparql.queryforms import *
 from telescope.sparql.helpers import RDF, XSD, is_a
-from telescope.sparql.util import defrag, to_variable, to_list
+from telescope.sparql.util import defrag, to_list
 
 __all__ = ['Compiler', 'ExpressionCompiler', 'SelectCompiler']
 
@@ -16,10 +35,26 @@ def join(tokens, sep=' '):
     return sep.join([unicode(token) for token in tokens if token])
 
 class Compiler(object):
+    """
+    Base class for compiling Python representations of SPARQL concepts to
+    query strings.
+
+    The `Compiler` base class defines:
+    
+    * A `prefix_map` attribute, which is a mapping of `rdflib.Namespace`
+      instances to prefix names.  For example: {RDF: 'rdf'}
+
+    * A `compile` method, which accepts a Python representation of some SPARQL
+      concept and returns a string.
+    
+    """
     def __init__(self, prefix_map=None):
         if prefix_map is None:
             prefix_map = {}
         self.prefix_map = prefix_map
+
+    def compile(self, obj):
+        raise NotImplementedError
 
 class ExpressionCompiler(Compiler):
     PRECEDENCE = {
@@ -134,31 +169,11 @@ class ExpressionCompiler(Compiler):
 
 
 class QueryCompiler(Compiler):
-    HANDLERS = {}
-
-    @classmethod
-    def handle(cls, query_type):
-        cls.HANDLERS[query_type] = cls
-
-    @classmethod
-    def get_handler(cls, query_or_type):
-        if isinstance(query_or_type, SPARQLQuery):
-            return cls.get_handler(type(query_or_type))
-        elif isinstance(query_or_type, type):
-            try:
-                return cls.HANDLERS[query_or_type]
-            except KeyError:
-                type_base = query_or_type.__base__
-                if isinstance(type_base, type):
-                    return cls.get_handler(type_base)
-                else:
-                    raise
-        else:
-            raise TypeError
-
-    def __init__(self, prefix_map=None):
-        Compiler.__init__(self, prefix_map)
-        self.expression_compiler = ExpressionCompiler(self.prefix_map)
+    def __init__(self, prefix_map=None, expression_compiler=ExpressionCompiler):
+        super(QueryCompiler, self).__init__(prefix_map)
+        if not isinstance(expression_compiler, ExpressionCompiler):
+            expression_compiler = expression_compiler(self.prefix_map)
+        self.expression_compiler = expression_compiler
     
     def compile(self, query):
         """Compile `query` and return the resulting string.
@@ -342,11 +357,4 @@ class ConstructCompiler(SolutionModifierSupportingQueryCompiler):
             for token in self.graph_pattern(template, False):
                 yield token
         yield '}'
-
-
-QueryCompiler.handle(SPARQLQuery)
-SolutionModifierSupportingQueryCompiler.handle(SolutionModifierSupportingQuery)
-ProjectionSupportingQueryCompiler.handle(ProjectionSupportingQueryCompiler)
-SelectCompiler.handle(Select)
-ConstructCompiler.handle(Construct)
 

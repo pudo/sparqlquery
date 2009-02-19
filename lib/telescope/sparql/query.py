@@ -66,16 +66,19 @@ class SPARQLQuery(object):
         """
         return graph.query(unicode(self.compile(prefix_map)))
     
-    def compile(self, prefix_map=None):
+    def _get_compiler_class(self):
+        from telescope.sparql.compiler import QueryCompiler
+        return QueryCompiler
+
+    def compile(self, prefix_map=None, compiler_class=None):
         """Compile this query and return the resulting string.
         
         If `prefix_map` is given, use it as a mapping from `rdflib.Namespace`
         instances to prefixed names to use in the compiled query.
         
         """
-        from telescope.sparql.compiler import QueryCompiler
-        handler = QueryCompiler.get_handler(self)
-        compiler = handler(prefix_map)
+        compiler_class = self._get_compiler_class()
+        compiler = compiler_class(prefix_map)
         return compiler.compile(self)
 
 
@@ -105,6 +108,10 @@ class SolutionModifierSupportingQuery(SPARQLQuery):
         else:
             raise ValueError("Indexing is not supported.")
     
+    def _get_compiler_class(self):
+        from telescope.sparql.compiler import SolutionModifierSupportingQueryCompiler
+        return SolutionModifierSupportingQueryCompiler
+
     def order_by(self, *expressions):
         """Return a new `Select` with an ORDER BY clause.
         
@@ -143,6 +150,10 @@ class ProjectionSupportingQuery(SolutionModifierSupportingQuery):
             projection = map(to_variable, to_list(projection))
         self.projection = tuple(projection)
     
+    def _get_compiler_class(self):
+        from telescope.sparql.compiler import ProjectionSupportingQueryCompiler
+        return ProjectionSupportingQueryCompiler
+
     def project(self, *terms, **kwargs):
         """
         Return a new `Select` with the given terms projected in the SELECT

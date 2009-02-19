@@ -8,6 +8,7 @@ class Ask(SPARQLQuery):
 
     query_form = 'ASK'
 
+
 class Construct(SolutionModifierSupportingQuery):
     """Programmatically build a SPARQL CONSTRUCT query."""
 
@@ -17,6 +18,10 @@ class Construct(SolutionModifierSupportingQuery):
                  offset=None):
         super(Construct, self).__init__(pattern, order_by, limit, offset)
         self._template = template
+
+    def _get_compiler_class(self):
+        from telescope.sparql.compiler import ConstructCompiler
+        return ConstructCompiler
     
     def template(self, template):
         return self._clone(_template=template)
@@ -35,6 +40,10 @@ class Select(ProjectionSupportingQuery):
             raise InvalidRequestError("DISTINCT and REDUCED are mutually exclusive.")
         self._distinct = distinct
         self._reduced = reduced
+
+    def _get_compiler_class(self):
+        from telescope.sparql.compiler import SelectCompiler
+        return SelectCompiler
     
     def distinct(self, flag=True):
         """
