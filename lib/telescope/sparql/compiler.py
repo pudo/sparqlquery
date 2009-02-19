@@ -4,7 +4,7 @@ from telescope.sparql.expressions import *
 from telescope.sparql import operators
 from telescope.sparql.operators import FunctionCall
 from telescope.sparql.patterns import *
-from telescope.sparql.select import *
+from telescope.sparql.queryforms import *
 from telescope.sparql.helpers import RDF, XSD, is_a
 from telescope.sparql.util import defrag, to_variable, to_list
 
