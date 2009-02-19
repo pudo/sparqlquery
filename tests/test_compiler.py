@@ -5,7 +5,7 @@ from telescope.sparql.expressions import Expression
 from telescope.sparql import operators
 from telescope.sparql.operators import Operator, FunctionCall
 from telescope.sparql.patterns import *
-from telescope.sparql.select import Select
+from telescope.sparql.queryforms import Select
 from telescope.sparql.compiler import *
 from telescope.sparql.helpers import *
 import helpers

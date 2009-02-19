@@ -1,37 +1,18 @@
-from rdflib import Variable, Namespace
-from telescope.sparql.expressions import Expression
 from telescope.sparql.patterns import GroupGraphPattern
-from telescope.sparql.helpers import *
 from telescope.sparql.util import to_variable, to_list
 
-class SPARQLQuery(object):
-    """Programmatically build SPARQL queries."""
+__all__ = ['SPARQLQuery', 'SolutionModifierSupportingQuery',
+           'ProjectionSupportingQuery']
 
-    def __init__(self, graph_pattern=None, **kwargs):
-        if graph_pattern is None:
-            graph_pattern = GroupGraphPattern([])
-        elif not isinstance(graph_pattern, GroupGraphPattern):
-            graph_pattern = GroupGraphPattern.from_obj(graph_pattern)
-        self._where = graph_pattern
-        self._limit = kwargs.pop('limit', None)
-        self._offset = kwargs.pop('offset', None)
-        self._order_by = kwargs.pop('order_by', None)
-        if kwargs:
-            key, value = kwargs.popitem()
-            raise TypeError("Unexpected keyword argument: %r" % key)
+class SPARQLQuery(object):
+    """Programmatically build a SPARQL query."""
     
-    def __getitem__(self, item):
-        if isinstance(item, slice):
-            if item.step is None or item.step == 1:
-                offset = item.start
-                limit = item.stop
-                if offset is not None and limit is not None:
-                    limit -= offset
-                return self._clone(_offset=offset, _limit=limit)
-            else:
-                raise ValueError("Stepped slicing is not supported.")
-        else:
-            raise ValueError("Indexing is not supported.")
+    def __init__(self, pattern=None):
+        if pattern is None:
+            pattern = GroupGraphPattern([])
+        elif not isinstance(pattern, GroupGraphPattern):
+            pattern = GroupGraphPattern.from_obj(pattern)
+        self._where = pattern
     
     def _clone(self, **kwargs):
         clone = self.__class__.__new__(self.__class__)
@@ -76,31 +57,6 @@ class SPARQLQuery(object):
         clone._where.filter(*constraints)
         return clone
     
-    def limit(self, number):
-        """Return a new `Select` with a LIMIT `number` clause.
-        
-        If `number` is None, the query will not have a LIMIT clause.
-        
-        """
-        return self._clone(_limit=number)
-    
-    def offset(self, number):
-        """Return a new `Select` with an OFFSET `number` clause.
-        
-        If `number` is None, the query will not have an OFFSET clause.
-        
-        """
-        return self._clone(_offset=number)
-    
-    def order_by(self, *variables):
-        """Return a new `Select` with an ORDER BY `variables` clause.
-        
-        If the singular argument None is given, the query will not have an
-        ORDER BY clause.
-        
-        """
-        return self._clone(_order_by=variables)
-    
     def execute(self, graph, prefix_map=None):
         """Compile and execute this query on `graph`.
         
@@ -109,18 +65,6 @@ class SPARQLQuery(object):
         
         """
         return graph.query(unicode(self.compile(prefix_map)))
-    
-    def select(self, *variables, **kwargs):
-        from telescope.sparql.select import Select
-
-    def construct(self, template):
-        pass
-
-    def ask(self):
-        pass
-    
-    def describe(self, *resources):
-        pass
     
     def compile(self, prefix_map=None):
         """Compile this query and return the resulting string.
@@ -133,4 +77,86 @@ class SPARQLQuery(object):
         compiler = SelectCompiler(prefix_map)
         return compiler.compile(self)
 
+class SolutionModifierSupportingQuery(SPARQLQuery):
+    """
+    Programmatically build a SPARQL query that supports the solution modifiers
+    ORDER_BY, LIMIT, and OFFSET.
+    
+    """
+    
+    def __init__(self, pattern=None, order_by=None, limit=None, offset=None):
+        super(SolutionModifierSupportingQuery, self).__init__(pattern)
+        self._order_by = order_by
+        self._limit = limit
+        self._offset = offset
+    
+    def __getitem__(self, item):
+        if isinstance(item, slice):
+            if item.step is None or item.step == 1:
+                offset = item.start
+                limit = item.stop
+                if offset is not None and limit is not None:
+                    limit -= offset
+                return self._clone(_offset=offset, _limit=limit)
+            else:
+                raise ValueError("Stepped slicing is not supported.")
+        else:
+            raise ValueError("Indexing is not supported.")
+    
+    def order_by(self, *expressions):
+        """Return a new `Select` with an ORDER BY clause.
+        
+        If no arguments are given, the query will not have an ORDER BY clause.
+        
+        """
+        return self._clone(_order_by=expressions or None)
+    
+    def limit(self, limit):
+        """Return a new `Select` with a LIMIT clause.
+        
+        If `limit` is None, the query will not have a LIMIT clause.
+        
+        """
+        return self._clone(_limit=limit)
+    
+    def offset(self, offset):
+        """Return a new `Select` with an OFFSET clause.
+        
+        If `offset` is None, the query will not have an OFFSET clause.
+        
+        """
+        return self._clone(_offset=offset)
 
+class ProjectionSupportingQuery(SolutionModifierSupportingQuery):
+    """Programmatically build a SPARQL query that supports projection."""
+    
+    def __init__(self, projection, pattern=None, order_by=None, limit=None,
+                 offset=None):
+        super(ProjectionSupportingQuery, self).__init__(pattern,
+                                                        order_by=order_by,
+                                                        limit=limit,
+                                                        offset=offset)
+        if projection != '*':
+            projection = map(to_variable, to_list(projection))
+        self.projection = tuple(projection)
+    
+    def project(self, *terms, **kwargs):
+        """
+        Return a new `Select` with the given terms projected in the SELECT
+        clause.
+        
+        Each argument may be a variable or a sequence of variables, and each
+        variable is converted to a `rdflib.Variable` instance using
+        `to_variable` (which means variables may also be specified as strings
+        and `Expression` instances).
+        
+        If the keyword-only argument `append` is true, the specified variables
+        will be appended to the current projection instead of replacing it.
+        
+        """
+        append = kwargs.pop('append', False)
+        projection = append and list(self.projection) or []
+        for arg in terms:
+            for variable in map(to_variable, to_list(arg)):
+                projection.append(variable)
+        return self._clone(projection=tuple(projection))

@@ -24,7 +24,7 @@ class Query(object):
         triples = []
         for name, property in self.class_._manager:
             triples.extend(property.triples(mapper.identifier, Variable(name)))
-        select = self.select.project(variables, add=True).where(*triples)
+        select = self.select.project(variables, append=True).where(*triples)
         results = select.execute(graph)
         return mapper.bind_results(graph, select, results)
     

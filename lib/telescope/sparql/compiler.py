@@ -201,10 +201,10 @@ class SelectCompiler(Compiler):
                 yield self.expression(expression)
     
     def projection(self, select):
-        if '*' in select.variables:
+        if '*' in select.projection:
             yield '*'
         else:
-            for variable in select.variables:
+            for variable in select.projection:
                 yield self.expression(variable)
     
     def where(self, select):

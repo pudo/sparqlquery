@@ -1,7 +1,7 @@
 from nose.tools import assert_raises
 from rdflib import Variable, Namespace
 from telescope.sparql.patterns import *
-from telescope.sparql.select import *
+from telescope.sparql.queryforms import Select
 from telescope.sparql.expressions import *
 from telescope.sparql.helpers import *
 
@@ -26,19 +26,19 @@ class TestProjectingVariables:
 
     def test_variables_arg_adds_variables(self):
         select = Select([Variable('foo')])
-        assert Variable('foo') in select.variables
+        assert Variable('foo') in select.projection
     
     def test_variables_can_be_expressions(self):
         select = self.select.project(v.foo)
-        assert Variable('foo') in select.variables
+        assert Variable('foo') in select.projection
     
     def test_variables_can_be_rdflib_variables(self):
         select = self.select.project(Variable('foo'))
-        assert Variable('foo') in select.variables
+        assert Variable('foo') in select.projection
 
     def test_variables_can_be_strings(self):
         select = self.select.project('foo')
-        assert Variable('foo') in select.variables
+        assert Variable('foo') in select.projection
     
     def test_method_is_generative(self):
         select = self.select.project(v.foo)
@@ -46,12 +46,12 @@ class TestProjectingVariables:
     
     def test_method_args_replace_projected_variables(self):
         select = self.select.project(v.foo, v.bar)
-        assert Variable('foo') in select.variables
-        assert Variable('bar') in select.variables
+        assert Variable('foo') in select.projection
+        assert Variable('bar') in select.projection
         select = self.select.project(v.baz)
-        assert Variable('baz') in select.variables
-        assert Variable('foo') not in select.variables
-        assert Variable('bar') not in select.variables
+        assert Variable('baz') in select.projection
+        assert Variable('foo') not in select.projection
+        assert Variable('bar') not in select.projection
 
 class TestAddingWhereClauses:
     def setup(self):

@@ -1,12 +1,12 @@
-from rdflib import Namespace, Variable, Literal, URIRef
+from rdflib import Variable
+from telescope.exceptions import *
 from telescope.sparql.patterns import Triple
-from telescope.sparql.select import Select
+from telescope.sparql.queryforms import Select
+from telescope.sparql.helpers import is_a
 from telescope.properties import PropertyManager
 from telescope.query import Query
 
 __all__ = ['Mapper', 'mapper', 'get_mapper']
-
-RDF = Namespace('http://www.w3.org/1999/02/22-rdf-syntax-ns#')
 
 class Mapper(object):
     def __init__(self, class_, type_or_select, identifier=None, properties=None):
@@ -20,10 +20,10 @@ class Mapper(object):
             select = type_or_select
         else:
             rdf_type = type_or_select
-            select = Select([identifier], [(identifier, RDF.type, rdf_type)])
+            select = Select([identifier], [(identifier, is_a, rdf_type)])
         
-        if identifier not in select.variables:
-            raise RuntimeError("select must include identifier")
+        if identifier not in select.projection:
+            raise InvalidRequestError("Select must include identifier.")
         
         self.select = select
         self.setup_class(properties or {})
@@ -46,7 +46,7 @@ class Mapper(object):
     
     def bind_results(self, graph, query, results):
         for result in results:
-            data = dict(zip(query.variables, result))
+            data = dict(zip(query.projection, result))
             instance = self.new_instance()
             self.bind_instance(graph, instance, data)
             yield instance

@@ -1,6 +1,7 @@
 from nose.tools import assert_raises
 from rdflib import Variable
-from telescope.sparql.select import Select
+from telescope.exceptions import *
+from telescope.sparql.queryforms import *
 
 class TestAddingLimitModifier:
     def setup(self):
@@ -74,7 +75,7 @@ class TestAddingDistinctModifier:
         assert select is not self.select
     
     def test_mutually_exclusive_with_reduced(self):
-        assert_raises(ValueError, Select, [], distinct=True, reduced=True)
+        assert_raises(InvalidRequestError, Select, [], distinct=True, reduced=True)
         select = Select([], reduced=True).distinct()
         assert select._reduced == False
 
@@ -100,7 +101,7 @@ class TestAddingReducedModifier:
         assert select is not self.select
     
     def test_mutually_exclusive_with_distinct(self):
-        assert_raises(ValueError, Select, [], distinct=True, reduced=True)
+        assert_raises(InvalidRequestError, Select, [], distinct=True, reduced=True)
         select = Select([], distinct=True).reduced()
         assert select._distinct == False
 
