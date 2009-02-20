@@ -5,7 +5,8 @@ from telescope.sparql.expressions import Expression
 from telescope.sparql import operators
 from telescope.sparql.operators import Operator, FunctionCall
 from telescope.sparql.patterns import *
-from telescope.sparql.queryforms import Select
+from telescope.sparql.query import *
+from telescope.sparql.queryforms import *
 from telescope.sparql.compiler import *
 from telescope.sparql.helpers import *
 import helpers
@@ -26,6 +27,21 @@ def tokens_equal(output, *expected):
     expected = " ".join(tokens)
     assert_equal(output, expected)
     return True
+
+class TestCreatingBaseCompiler:
+    def test_prefix_map_arg_sets_prefix_map(self):
+        prefix_map = {FOAF: 'foaf'}
+        compiler = SPARQLCompiler(prefix_map)
+        assert compiler.prefix_map == prefix_map
+    
+    def test_prefix_map_defaults_to_empty_dict(self):
+        compiler = SPARQLCompiler()
+        assert compiler.prefix_map == {}
+
+class TestUsingBaseCompiler:
+    def test_compile_method_raises_not_implemented(self):
+        compiler = SPARQLCompiler()
+        assert_raises(NotImplementedError, compiler.compile, 1)
 
 class TestCompilingTerm:
     def setup(self):
@@ -147,21 +163,36 @@ class TestCompilingRelationalExpression(CompilingExpressionBase):
             output = self.compiler.compile(expr)
             assert tokens_equal(output, '?x %s 2' % token)
 
-class CompilingSelectBase:
+class CompilingQueryBase:
+    PREFIX_MAP = {FOAF: 'foaf', RDF: 'rdf'}
     PREFIXES = ["PREFIX foaf: <http://xmlns.com/foaf/0.1/>",
                 "PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>"]
     
     def setup(self):
-        self.compiler = SelectCompiler({FOAF: 'foaf', RDF: 'rdf'})
+        self.query = SPARQLQuery()
+        self.query.query_form = 'TEST'
+        self.compiler = QueryCompiler(self.PREFIX_MAP)
 
-class TestCompilingTriple(CompilingSelectBase):
+class TestCompilingQuery(CompilingQueryBase):
+    def test_compiling_outputs_query_form(self):
+        self.query.query_form = 'FOO'
+        assert tokens_equal(
+            self.compiler.compile(self.query), self.PREFIXES, "FOO WHERE { }"
+        )
+    
+    def test_compiling_outputs_empty_where_clause(self):
+        assert tokens_equal(
+            self.compiler.compile(self.query), self.PREFIXES, "TEST WHERE { }"
+        )
+
+class TestCompilingTriple(CompilingQueryBase):
     def test_compiling_outputs_whitespace_joined_terms(self):
         triple = (v.x, FOAF.name, "Alice")
         assert tokens_equal(
             self.compiler.triple(triple), '?x foaf:name "Alice"'
         )
 
-class TestCompilingTriplesSameSubject(CompilingSelectBase):
+class TestCompilingTriplesSameSubject(CompilingQueryBase):
     def test_compiling_outputs_semicolon_joined_predicate_object_pairs(self):
         triples = TriplesSameSubject(v.x)[RDF.type: FOAF.Person,
                                           FOAF.name: "Alice",
@@ -171,43 +202,81 @@ class TestCompilingTriplesSameSubject(CompilingSelectBase):
             '?x rdf:type foaf:Person ; foaf:name "Alice" ; foaf:mbox ?mbox'
         )
 
+class TestCompilingQueryPattern(CompilingQueryBase):
+    def test_compiling_triples_same_subject_outputs_semicolon_joined_predicate_object_pairs(self):
+        triples = TriplesSameSubject(v.x)[RDF.type: FOAF.Person,
+                                          FOAF.name: "Alice",
+                                          FOAF.mbox: v.mbox]
+        query = self.query.where(triples)
+        assert tokens_equal(
+            self.compiler.compile(query), self.PREFIXES,
+            """
+            TEST WHERE {
+                ?x rdf:type foaf:Person ; foaf:name "Alice" ; foaf:mbox ?mbox
+            }
+            """
+        )
+
+class CompilingAskBase(CompilingQueryBase):
+    def setup(self):
+        self.compiler = AskCompiler(self.PREFIX_MAP)
+
+class CompilingSelectBase(CompilingQueryBase):
+    def setup(self):
+        self.query = Select([v.x])
+        self.compiler = SelectCompiler(self.PREFIX_MAP)
+
+class CompilingConstructBase(CompilingQueryBase):
+    def setup(self):
+        self.compiler = ConstructCompiler(self.PREFIX_MAP)
+
+class CompilingDescribeBase(CompilingQueryBase):
+    def setup(self):
+        self.compiler = DescribeCompiler(self.PREFIX_MAP)
+
+class TestCompilingSolutionModifiers(CompilingQueryBase):
+    def setup(self):
+        self.query = SolutionModifierSupportingQuery()
+        self.query.query_form = 'TEST'
+        self.compiler = SolutionModifierSupportingQueryCompiler(self.PREFIX_MAP)
+    
+    def test_compiling_limit_outputs_limit_clause(self):
+        query = self.query.limit(5)
+        assert tokens_equal(
+            self.compiler.compile(query), self.PREFIXES,
+            'TEST WHERE { } LIMIT 5'
+        )
+
+    def test_compiling_offset_outputs_offset_clause(self):
+        query = self.query.offset(10)
+        assert tokens_equal(
+            self.compiler.compile(query), self.PREFIXES,
+            'TEST WHERE { } OFFSET 10'
+        )
+
+    def test_compiling_order_by_outputs_order_by_clause(self):
+        query = self.query.order_by(v.x)
+        assert tokens_equal(
+            self.compiler.compile(query), self.PREFIXES,
+            'TEST WHERE { } ORDER BY ?x'
+        )
+
 class TestCompilingSelectModifiers(CompilingSelectBase):
     def test_compiling_distinct_outputs_distinct_keyword(self):
-        select = Select([v.x]).distinct()
+        query = self.query.distinct()
         assert tokens_equal(
-            self.compiler.compile(select), self.PREFIXES,
+            self.compiler.compile(query), self.PREFIXES,
             'SELECT DISTINCT ?x WHERE { }'
         )
     
     def test_compiling_reduced_outputs_reduced_keyword(self):
-        select = Select([v.x]).reduced()
+        query = self.query.reduced()
         assert tokens_equal(
-            self.compiler.compile(select), self.PREFIXES,
+            self.compiler.compile(query), self.PREFIXES,
             'SELECT REDUCED ?x WHERE { }'
         )
 
-    def test_compiling_limit_outputs_limit_clause(self):
-        select = Select([v.x]).limit(5)
-        assert tokens_equal(
-            self.compiler.compile(select), self.PREFIXES,
-            'SELECT ?x WHERE { } LIMIT 5'
-        )
-
-    def test_compiling_offset_outputs_offset_clause(self):
-        select = Select([v.x]).offset(10)
-        assert tokens_equal(
-            self.compiler.compile(select), self.PREFIXES,
-            'SELECT ?x WHERE { } OFFSET 10'
-        )
-
-    def test_compiling_order_by_outputs_order_by_clause(self):
-        select = Select([v.x]).order_by(v.x)
-        assert tokens_equal(
-            self.compiler.compile(select), self.PREFIXES,
-            'SELECT ?x WHERE { } ORDER BY ?x'
-        )
-
-class TestCompilingFilter(CompilingSelectBase):
+class TestCompilingFilter(CompilingQueryBase):
     def test_compiling_filter_conditional_constraint_includes_brackets(self):
         output = self.compiler.filter(Filter(v.x & True))
         assert tokens_equal(output, 'FILTER (?x && true)')
@@ -225,7 +294,7 @@ class TestCompilingFilter(CompilingSelectBase):
         assert tokens_equal(output, 'FILTER bound(?x)')
 
 class TestCompilingSelect(CompilingSelectBase):
-    def test_compiling_select_asterisk_outputs_asterisk(self):
+    def test_compiling_select_all_outputs_asterisk(self):
         select = Select(['*'])
         assert tokens_equal(
             self.compiler.compile(select), self.PREFIXES, 'SELECT * WHERE { }'

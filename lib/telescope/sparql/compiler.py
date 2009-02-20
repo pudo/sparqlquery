@@ -1,7 +1,8 @@
 """
 Classes for compiling SPARQL query strings from Python objects.
 
-Compiling is split up among two compilers:
+Compiling is split between two compilers that both inherit from
+`SPARQLCompiler`:
 
   * `ExpressionCompiler` compiles SPARQL expressions (terms, conditional
     expressions, relational expressions, operators...)
@@ -29,17 +30,20 @@ from telescope.sparql.queryforms import *
 from telescope.sparql.helpers import RDF, XSD, is_a
 from telescope.sparql.util import defrag, to_list
 
-__all__ = ['Compiler', 'ExpressionCompiler', 'SelectCompiler']
+__all__ = ['SPARQLCompiler', 'ExpressionCompiler', 'QueryCompiler',
+           'SolutionModifierSupportingQueryCompiler',
+           'ProjectionSupportingQueryCompiler', 'SelectCompiler',
+           'ConstructCompiler']
 
 def join(tokens, sep=' '):
     return sep.join([unicode(token) for token in tokens if token])
 
-class Compiler(object):
+class SPARQLCompiler(object):
     """
     Base class for compiling Python representations of SPARQL concepts to
     query strings.
 
-    The `Compiler` base class defines:
+    The `SPARQLCompiler` base class defines:
     
     * A `prefix_map` attribute, which is a mapping of `rdflib.Namespace`
       instances to prefix names.  For example: {RDF: 'rdf'}
@@ -52,11 +56,11 @@ class Compiler(object):
         if prefix_map is None:
             prefix_map = {}
         self.prefix_map = prefix_map
-
+    
     def compile(self, obj):
         raise NotImplementedError
 
-class ExpressionCompiler(Compiler):
+class ExpressionCompiler(SPARQLCompiler):
     PRECEDENCE = {
         operators.or_: 0, 'logical-or': 0,
         operators.and_: 1, 'logical-and': 1,
@@ -168,7 +172,7 @@ class ExpressionCompiler(Compiler):
         yield self.compile(expression.value)
 
 
-class QueryCompiler(Compiler):
+class QueryCompiler(SPARQLCompiler):
     def __init__(self, prefix_map=None, expression_compiler=ExpressionCompiler):
         super(QueryCompiler, self).__init__(prefix_map)
         if not isinstance(expression_compiler, ExpressionCompiler):

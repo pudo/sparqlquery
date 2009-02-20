@@ -76,7 +76,7 @@ class GraphPattern(object):
     
     def pattern(self, *patterns):
         for pattern in patterns:
-            if not isinstance(pattern, (Triple, GraphPattern)):
+            if not isinstance(pattern, (Triple, TriplesBlock, GraphPattern)):
                 pattern = Triple.from_obj(pattern)
             self.patterns.append(pattern)
     
@@ -109,7 +109,7 @@ class GraphPattern(object):
         if isinstance(obj, GraphPattern):
             return obj._clone(**kwargs)
         else:
-            if isinstance(obj, (Triple, GraphPattern)):
+            if isinstance(obj, (Triple, TriplesBlock, GraphPattern)):
                 obj = [obj]
             return cls(obj, **kwargs)
 
