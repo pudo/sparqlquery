@@ -115,12 +115,12 @@ class GraphPattern(object):
 
 class GroupGraphPattern(GraphPattern):
     def __init__(self, patterns, optional=False):
-        GraphPattern.__init__(self, patterns)
+        super(GroupGraphPattern, self).__init__(patterns)
         self.optional = optional
 
 class UnionGraphPattern(GraphPattern):
     def __init__(self, patterns):
-        GraphPattern.__init__(self, patterns)
+        super(UnionGraphPattern, self).__init__(patterns)
 
 # Helpers. Normally imported from telescope.sparql.helpers.
 

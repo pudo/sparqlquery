@@ -90,7 +90,7 @@ class Expression(object):
 
 class BinaryExpression(Expression):
     def __init__(self, operator, left, right):
-        Expression.__init__(self, None, operator)
+        super(BinaryExpression, self).__init__(None, operator)
         self.left = left
         self.right = right
 
@@ -99,7 +99,7 @@ class BinaryExpression(Expression):
 
 class ConditionalExpression(Expression):
     def __init__(self, operator, operands):
-        Expression.__init__(self, None, operator)
+        super(ConditionalExpression, self).__init__(None, operator)
         self.operands = operands
 
     def __repr__(self):

@@ -19,7 +19,7 @@ class Operator(object):
 
 class FunctionCall(Expression):
     def __init__(self, operator, arg_list):
-        Expression.__init__(self, None, operator)
+        super(FunctionCall, self).__init__(None, operator)
         self.arg_list = arg_list
     
     def __repr__(self):
@@ -31,7 +31,7 @@ class OperatorConstructor(object):
     
     def __getattribute__(self, operator):
         try:
-            value = object.__getattribute__(self, operator)
+            value = super(OperatorConstructor, self).__getattribute__(operator)
         except AttributeError:
             if self._namespace:
                 operator = self._namespace[operator]
@@ -43,7 +43,7 @@ class OperatorConstructor(object):
 
 class BuiltinOperatorConstructor(OperatorConstructor):
     def __init__(self):
-        OperatorConstructor.__init__(self, None)
+        super(BuiltinOperatorConstructor, self).__init__(None)
 
     def __call__(self, namespace):
         return OperatorConstructor(namespace)
