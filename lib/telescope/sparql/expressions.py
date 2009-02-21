@@ -111,19 +111,34 @@ def and_(*operands):
 def or_(*operands):
     return ConditionalExpression(operator.or_, operands)
 
-class VariableExpressionConstructor(object):
+class VariableExpression(Expression):
     _VARIABLES = weakref.WeakValueDictionary()
     
-    def __call__(self, name):
+    def __new__(cls, name):
         if isinstance(name, basestring):
             name = unicode(name)
+            try:
+                instance = cls._VARIABLES[name]
+            except KeyError:
+                instance = super(VariableExpression, cls).__new__(cls, name)
+                instance._initialized = False
+                cls._VARIABLES[name] = instance
+            return instance
         else:
             raise TypeError("Variable names must be strings.")
-        try:
-            expr = self._VARIABLES[name]
-        except KeyError:
-            expr = self._VARIABLES[name] = Expression(Variable(name))
-        return expr
+    
+    def __init__(self, name):
+        if not self._initialized:
+            super(VariableExpression, self).__init__(Variable(name))
+            self._initialized = True
+    
+    def __getitem__(self, predicate_object_list):
+        from telescope.sparql.patterns import TriplesSameSubject
+        return TriplesSameSubject(self)[predicate_object_list]
+
+class VariableExpressionConstructor(object):
+    def __call__(self, name):
+        return VariableExpression(name)
     
     def __getattr__(self, name):
         return self(name)

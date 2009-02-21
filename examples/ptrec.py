@@ -48,11 +48,11 @@ def get_index_event(cohort_line):
     offset = int(surg_seq) - 1
 
     query = Select([v.event, v.start_min, v.start_max]).where(
-        subject(v.event)[is_a: PTREC.Event_management_operation,
-                         DNODE.contains: v.start],
-        subject(v.start)[is_a: PTREC.EventStartDate,
-                         PTREC.hasDateTimeMin: v.start_min,
-                         PTREC.hasDateTimeMax: v.start_max]
+        v.event[is_a: PTREC.Event_management_operation,
+                DNODE.contains: v.start],
+        v.start[is_a: PTREC.EventStartDate,
+                PTREC.hasDateTimeMin: v.start_min,
+                PTREC.hasDateTimeMax: v.start_max]
     ).filter(
         v.start_min >= surg_min, v.start_max < surg_max
     ).order_by(v.start_min).limit(1).offset(offset)

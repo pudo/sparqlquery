@@ -1,5 +1,5 @@
 import warnings
-from telescope.sparql.expressions import Expression, and_
+from telescope.sparql.expressions import and_
 
 __all__ = ['Triple', 'TriplesSameSubject', 'Filter', 'GraphPattern',
            'GroupGraphPattern', 'UnionGraphPattern', 'union', 'optional']
