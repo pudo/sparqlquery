@@ -37,17 +37,23 @@ class Event(Subject):
     def __repr__(self):
         return "Event(%r)" % (self.type,)
 
-def get_index_event(cohort_line):
+graph = ConjunctiveGraph()
+
+def get_index_event(cohort_line, graph=graph):
     ccfid, surg_date, surg_seq = cohort_line.split()
-    rdf_dir = os.environ['RDF_DIRECTORY']
-    rdf_file = os.path.join(rdf_dir, '%s.rdf' % ccfid)
-    graph = ConjunctiveGraph()
-    graph.load(rdf_file)
     surg_min = datetime.strptime(surg_date, '%Y-%m-%d')
     surg_max = surg_min + timedelta(days=1)
     offset = int(surg_seq) - 1
 
+    rdf_dir = os.environ['RDF_DIRECTORY']
+    rdf_file = os.path.join(rdf_dir, '%s.rdf' % ccfid)
+    graph.load(rdf_file, publicID=ccfid)
+
     query = Select([v.event, v.start_min, v.start_max]).where(
+        v.record[is_a: PTREC.PatientRecord,
+                 DNODE.contains: v.patient],
+        v.patient[is_a: PTREC.Patient,
+                  PTREC.hasCCFID: ccfid],
         v.event[is_a: PTREC.Event_management_operation,
                 DNODE.contains: v.start],
         v.start[is_a: PTREC.EventStartDate,
@@ -57,5 +63,4 @@ def get_index_event(cohort_line):
         v.start_min >= surg_min, v.start_max < surg_max
     ).order_by(v.start_min).limit(1).offset(offset)
 
-    prefix_map = {PTREC: 'ptrec', DNODE: 'dnode'}
-    return query.execute(graph, prefix_map)
+    return query.execute(graph, {PTREC: 'ptrec': DNODE: 'dnode'})
