@@ -1,5 +1,8 @@
 import operator
-from rdflib import Namespace
+try:
+    from rdflib import Namespace
+except ImportError:
+    from rdflib.term import Namespace
 from telescope.sparql.expressions import VariableExpressionConstructor, and_, or_
 from telescope.sparql.operators import Operator, BuiltinOperatorConstructor
 from telescope.sparql.patterns import union, optional, TriplesSameSubject

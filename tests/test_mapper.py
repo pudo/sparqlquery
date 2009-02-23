@@ -1,5 +1,5 @@
 from nose.tools import assert_raises
-from rdflib import Namespace, ConjunctiveGraph, Variable, BNode, URIRef
+from telescope import Namespace, ConjunctiveGraph, Variable, BNode, URIRef
 from telescope.mapper import Mapper, mapper
 from telescope.properties import Property, Relationship
 from telescope.query import Query

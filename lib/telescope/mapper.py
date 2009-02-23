@@ -1,4 +1,4 @@
-from rdflib import Variable
+from telescope import Variable
 from telescope.exceptions import *
 from telescope.sparql.patterns import Triple
 from telescope.sparql.queryforms import Select

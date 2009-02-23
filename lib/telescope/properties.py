@@ -1,4 +1,4 @@
-from rdflib import Namespace, Variable, Literal, URIRef
+from telescope import Namespace, Variable, Literal, URIRef
 from telescope.sparql.patterns import Triple
 
 __all__ = ['Term', 'Property', 'Label']

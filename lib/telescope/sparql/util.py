@@ -1,4 +1,7 @@
-from rdflib import Variable
+try:
+    from rdflib import Variable
+except ImportError:
+    from rdflib.term import Variable
 from telescope.sparql.expressions import Expression
 
 def defrag(uri):

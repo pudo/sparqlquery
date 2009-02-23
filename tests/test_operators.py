@@ -1,4 +1,4 @@
-from rdflib import Variable, Namespace, URIRef
+from telescope import Namespace, Variable, URIRef
 from telescope.sparql.expressions import Expression
 from telescope.sparql.operators import *
 from telescope.sparql.helpers import *

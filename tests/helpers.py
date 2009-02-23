@@ -1,6 +1,6 @@
 import os.path
 import operator
-from rdflib import ConjunctiveGraph
+from telescope import ConjunctiveGraph
 
 UNARY_OPERATORS = [operator.pos, operator.neg, operator.invert, operator.inv]
 CONDITIONAL_OPERATORS = [operator.and_, operator.or_]

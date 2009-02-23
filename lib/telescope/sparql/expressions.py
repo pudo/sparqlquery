@@ -1,6 +1,9 @@
 import weakref
 import operator
-from rdflib import Variable
+try:
+    from rdflib import Variable
+except ImportError:
+    from rdflib.term import Variable
 
 __all__ = ['Expression', 'BinaryExpression', 'ConditionalExpression',
            'VariableExpressionConstructor', 'and_', 'or_']

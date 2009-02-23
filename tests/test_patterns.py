@@ -1,5 +1,5 @@
 from nose.tools import assert_raises
-from rdflib import Variable, Namespace, URIRef
+from telescope import Variable, Namespace, URIRef
 from telescope.sparql.patterns import *
 from telescope.sparql.helpers import *
 

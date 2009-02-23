@@ -1,4 +1,4 @@
-from rdflib import Variable
+from telescope import Variable
 
 class Query(object):
     def __init__(self, class_, session=None):
