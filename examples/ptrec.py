@@ -75,8 +75,6 @@ def get_index_event(cohort_line, graph=graph):
                  DNODE.contains: v.patient,
                  DNODE.contains: v.event],
         v.patient[is_a: PTREC.Patient,
-                  # FIXME: Have to explicitly type as xsd:string to match;
-                  # this seems to be an rdflib bug.
                   PTREC.hasCCFID: Literal(ccfid, datatype=XSD.string)],
         v.event[is_a: PTREC.Event_management_operation,
                 DNODE.contains: v.start],
