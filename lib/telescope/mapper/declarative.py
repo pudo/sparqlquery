@@ -1,5 +1,5 @@
-from telescope.properties import PropertyManager, Term
 from telescope.mapper import mapper
+from telescope.mapper.properties import PropertyManager, Term
 
 class DeclarativeMeta(type):
     def __init__(cls, name, bases, attrs):
