@@ -12,6 +12,7 @@ __all__ = ['RDF', 'RDFS', 'XSD', 'FN', 'is_a', 'v', 'op', 'fn', 'asc', 'desc',
 
 RDF = Namespace('http://www.w3.org/1999/02/22-rdf-syntax-ns#')
 RDFS = Namespace('http://www.w3.org/2000/01/rdf-schema#')
+OWL = Namespace('http://www.w3.org/2002/07/owl#')
 XSD = Namespace('http://www.w3.org/2001/XMLSchema#')
 FN = Namespace('http://www.w3.org/2005/xpath-functions#')
 
