@@ -1,6 +1,6 @@
 import os.path
 import operator
-from telescope import ConjunctiveGraph
+from rdflib.Graph import Graph
 
 UNARY_OPERATORS = [operator.pos, operator.neg, operator.invert, operator.inv]
 CONDITIONAL_OPERATORS = [operator.and_, operator.or_]
@@ -15,7 +15,7 @@ def resource(filename):
     return os.path.join(os.path.dirname(__file__), 'resources', filename)
 
 def graph(*filenames):
-    graph = ConjunctiveGraph()
+    graph = Graph()
     for filename in filenames:
-        graph.load(resource(filename))
+        graph.load(resource(filename), publicID=filename)
     return graph
