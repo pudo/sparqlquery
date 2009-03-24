@@ -4,13 +4,26 @@ except ImportError:
     from rdflib.term import Variable
 from telescope.sparql.expressions import Expression
 
-def defrag(uri):
-    if '#' in uri:
-        namespace, fragment = uri.split('#', 1)
-        return ('%s#' % namespace, fragment)
+def defrag(uri, prefix_map=None):
+    if prefix_map is None:
+        if '#' in uri:
+            namespace, fragment = uri.split('#', 1)
+            return ('%s#' % namespace, fragment)
+        elif '/' in uri:
+            namespace, fragment = uri.rsplit('/', 1)
+            return ('%s/' % namespace, fragment)
     else:
-        namespace, fragment = uri.rsplit('/', 1)
-        return ('%s/' % namespace, fragment)
+        for prefix, namespace in prefix_map.iteritems():
+            if uri.startswith(namespace):
+                return (prefix, uri[len(namespace):])
+    return (None, uri)
+
+def to_qname(uri, prefix_map):
+    prefix, name = defrag(uri, prefix_map)
+    if prefix is not None:
+        return '%s:%s' % (prefix, name)
+    else:
+        return name
 
 def to_variable(obj):
     while isinstance(obj, Expression):
