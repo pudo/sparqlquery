@@ -2,7 +2,8 @@ import warnings
 from telescope.sparql.expressions import and_
 
 __all__ = ['Triple', 'TriplesSameSubject', 'Filter', 'GraphPattern',
-           'GroupGraphPattern', 'UnionGraphPattern', 'union', 'optional']
+           'GroupGraphPattern', 'UnionGraphPattern', 'union',
+           'optional', 'graph']
 
 
 class Triple(object):
@@ -130,6 +131,12 @@ class UnionGraphPattern(GraphPattern):
         super(UnionGraphPattern, self).__init__(patterns)
 
 
+class GraphGraphPattern(GraphPattern):
+    def __init__(self, graph, patterns):
+        self.graph = graph
+        super(GraphGraphPattern, self).__init__(patterns)
+
+
 # Helpers. Normally imported from telescope.sparql.helpers.
 def union(*patterns):
     from telescope.sparql.patterns import UnionGraphPattern, GraphPattern
@@ -140,3 +147,7 @@ def optional(*patterns):
     from telescope.sparql.patterns import GroupGraphPattern
     return GroupGraphPattern(patterns, optional=True)
 
+
+def graph(graph, *patterns):
+    from telescope.sparql.patterns import GraphGraphPattern
+    return GraphGraphPattern(graph, patterns)

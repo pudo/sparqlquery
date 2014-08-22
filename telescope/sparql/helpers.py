@@ -5,7 +5,8 @@ except ImportError:
     from rdflib.term import Namespace
 from telescope.sparql.expressions import VariableExpressionConstructor, and_, or_
 from telescope.sparql.operators import Operator, BuiltinOperatorConstructor
-from telescope.sparql.patterns import union, optional, TriplesSameSubject
+from telescope.sparql.patterns import union, optional, graph
+from telescope.sparql.patterns import TriplesSameSubject as subject
 
 __all__ = ['RDF', 'RDFS', 'OWL', 'XSD', 'FN', 'is_a', 'v', 'op', 'fn', 'asc',
            'desc', 'and_', 'or_', 'union', 'optional']
@@ -22,7 +23,3 @@ op = BuiltinOperatorConstructor()
 fn = op(FN)
 asc = Operator('ASC')
 desc = Operator('DESC')
-
-
-def subject(term):
-    return TriplesSameSubject(term)

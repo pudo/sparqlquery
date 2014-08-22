@@ -1,6 +1,6 @@
 import re
 from nose.tools import assert_raises, assert_equal
-from rdflib import Variable, Namespace, Literal
+from rdflib import Variable, Namespace, Literal, URIRef
 from telescope.sparql.expressions import Expression
 from telescope.sparql import operators
 from telescope.sparql.operators import Operator, FunctionCall
@@ -15,6 +15,7 @@ FOAF = Namespace('http://xmlns.com/foaf/0.1/')
 DC10 = Namespace('http://purl.org/dc/elements/1.0/')
 DC11 = Namespace('http://purl.org/dc/elements/1.1/')
 
+
 def tokens_equal(output, *expected):
     if isinstance(output, basestring):
         output = output.split()
@@ -28,6 +29,7 @@ def tokens_equal(output, *expected):
     assert_equal(output, expected)
     return True
 
+
 class TestCreatingBaseCompiler:
     def test_prefix_map_arg_sets_prefix_map(self):
         prefix_map = {FOAF: 'foaf'}
@@ -38,10 +40,12 @@ class TestCreatingBaseCompiler:
         compiler = SPARQLCompiler()
         assert compiler.prefix_map == {}
 
+
 class TestUsingBaseCompiler:
     def test_compile_method_raises_not_implemented(self):
         compiler = SPARQLCompiler()
         assert_raises(NotImplementedError, compiler.compile, 1)
+
 
 class TestCompilingTerm:
     def setup(self):
@@ -80,9 +84,11 @@ class TestCompilingTerm:
     def test_compiling_term_with_bracketed_true_outputs_brackets(self):
         assert tokens_equal(self.compiler.compile(1, bracketed=True), '(1)')
 
+
 class CompilingExpressionBase:
     def setup(self):
         self.compiler = ExpressionCompiler({RDF: 'rdf', FOAF: 'foaf'})
+
 
 class TestCompilingTermWithPrefixMap(CompilingExpressionBase):
     def setup(self):
@@ -95,6 +101,7 @@ class TestCompilingTermWithPrefixMap(CompilingExpressionBase):
     def test_compiling_uri_without_prefix_returns_absolute_n3_iri(self):
         term = XSD.integer
         assert self.compiler.term(term) == term.n3()
+
 
 class TestCompilingOperator(CompilingExpressionBase):
     def test_compiling_unary_operator_outputs_token(self):
@@ -121,6 +128,7 @@ class TestCompilingOperator(CompilingExpressionBase):
         operator = FN.ceiling
         token = operator.n3()
         assert tokens_equal(self.compiler.operator(operator), token)
+
 
 class TestCompilingConditional(CompilingExpressionBase):
     def test_compiling_ored_ands_omits_brackets(self):
@@ -149,6 +157,7 @@ class TestCompilingConditional(CompilingExpressionBase):
         output = self.compiler.compile(expr)
         assert tokens_equal(output, 'bound(?name) && bound(?mbox)')
 
+
 class TestCompilingRelationalExpression(CompilingExpressionBase):
     def test_compiling_unary_expression_outputs_operator_and_operand(self):
         for op in helpers.UNARY_OPERATORS:
@@ -163,6 +172,7 @@ class TestCompilingRelationalExpression(CompilingExpressionBase):
             output = self.compiler.compile(expr)
             assert tokens_equal(output, '?x %s 2' % token)
 
+
 class CompilingQueryBase:
     PREFIX_MAP = {FOAF: 'foaf', RDF: 'rdf'}
     PREFIXES = ["PREFIX foaf: <http://xmlns.com/foaf/0.1/>",
@@ -172,6 +182,7 @@ class CompilingQueryBase:
         self.query = SPARQLQuery()
         self.query.query_form = 'TEST'
         self.compiler = QueryCompiler(self.PREFIX_MAP)
+
 
 class TestCompilingQuery(CompilingQueryBase):
     def test_compiling_outputs_query_form(self):
@@ -185,12 +196,14 @@ class TestCompilingQuery(CompilingQueryBase):
             self.compiler.compile(self.query), self.PREFIXES, "TEST WHERE { }"
         )
 
+
 class TestCompilingTriple(CompilingQueryBase):
     def test_compiling_outputs_whitespace_joined_terms(self):
         triple = (v.x, FOAF.name, "Alice")
         assert tokens_equal(
             self.compiler.triple(triple), '?x foaf:name "Alice"'
         )
+
 
 class TestCompilingTriplesSameSubject(CompilingQueryBase):
     def test_compiling_outputs_semicolon_joined_predicate_object_pairs(self):
@@ -201,6 +214,7 @@ class TestCompilingTriplesSameSubject(CompilingQueryBase):
             self.compiler.triples_same_subject(triples),
             '?x rdf:type foaf:Person ; foaf:name "Alice" ; foaf:mbox ?mbox'
         )
+
 
 class TestCompilingQueryPattern(CompilingQueryBase):
     def test_compiling_triples_same_subject_outputs_semicolon_joined_predicate_object_pairs(self):
@@ -217,22 +231,27 @@ class TestCompilingQueryPattern(CompilingQueryBase):
             """
         )
 
+
 class CompilingAskBase(CompilingQueryBase):
     def setup(self):
         self.compiler = AskCompiler(self.PREFIX_MAP)
+
 
 class CompilingSelectBase(CompilingQueryBase):
     def setup(self):
         self.query = Select([v.x])
         self.compiler = SelectCompiler(self.PREFIX_MAP)
 
+
 class CompilingConstructBase(CompilingQueryBase):
     def setup(self):
         self.compiler = ConstructCompiler(self.PREFIX_MAP)
 
+
 class CompilingDescribeBase(CompilingQueryBase):
     def setup(self):
         self.compiler = DescribeCompiler(self.PREFIX_MAP)
+
 
 class TestCompilingSolutionModifiers(CompilingQueryBase):
     def setup(self):
@@ -261,6 +280,7 @@ class TestCompilingSolutionModifiers(CompilingQueryBase):
             'TEST WHERE { } ORDER BY ?x'
         )
 
+
 class TestCompilingSelectModifiers(CompilingSelectBase):
     def test_compiling_distinct_outputs_distinct_keyword(self):
         query = self.query.distinct()
@@ -275,6 +295,7 @@ class TestCompilingSelectModifiers(CompilingSelectBase):
             self.compiler.compile(query), self.PREFIXES,
             'SELECT REDUCED ?x WHERE { }'
         )
+
 
 class TestCompilingFilter(CompilingQueryBase):
     def test_compiling_filter_conditional_constraint_includes_brackets(self):
@@ -382,3 +403,17 @@ class TestCompilingSelect(CompilingSelectBase):
             """
         )
 
+    def test_compiling_where_outputs_graph_graph_pattern(self):
+        select = Select([v.name]).where(
+            graph(URIRef("http://example.org/"), (v.x, FOAF.name, v.name))
+        )
+        assert tokens_equal(
+            self.compiler.compile(select), self.PREFIXES,
+            """
+            SELECT ?name WHERE {
+                GRAPH <http://example.org/> {
+                    ?x foaf:name ?name
+                }
+            }
+            """
+        )
