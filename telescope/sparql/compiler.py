@@ -19,7 +19,7 @@ For example, `QueryCompiler.compile()` joins the tokens yielded by calling
 
 """
 from operator import itemgetter
-from rdflib import Literal, URIRef
+from rdflib import Literal, URIRef, Namespace
 from telescope.exceptions import *
 from telescope.sparql.expressions import *
 from telescope.sparql import operators
@@ -35,8 +35,10 @@ __all__ = ['SPARQLCompiler', 'ExpressionCompiler', 'QueryCompiler',
            'ProjectionSupportingQueryCompiler', 'SelectCompiler',
            'ConstructCompiler']
 
+
 def join(tokens, sep=' '):
     return sep.join([unicode(token) for token in tokens if token])
+
 
 class SPARQLCompiler(object):
     """
@@ -59,6 +61,7 @@ class SPARQLCompiler(object):
     
     def compile(self, obj):
         raise NotImplementedError
+
 
 class ExpressionCompiler(SPARQLCompiler):
     PRECEDENCE = {
@@ -129,6 +132,8 @@ class ExpressionCompiler(SPARQLCompiler):
         elif isinstance(term, Literal):
             if term.datatype in (XSD.int, XSD.integer, XSD.float, XSD.boolean):
                 return unicode(term).lower()
+        elif isinstance(term, Namespace):
+            return unicode(term)
         return term.n3()
     
     def operator(self, operator):

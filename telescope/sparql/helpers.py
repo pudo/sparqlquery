@@ -23,5 +23,6 @@ fn = op(FN)
 asc = Operator('ASC')
 desc = Operator('DESC')
 
+
 def subject(term):
     return TriplesSameSubject(term)

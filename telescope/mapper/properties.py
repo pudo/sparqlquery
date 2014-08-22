@@ -1,9 +1,10 @@
-from telescope import Namespace, Variable, Literal, URIRef
+from telescope import Namespace, Literal, URIRef
 from telescope.sparql.patterns import Triple
 
 __all__ = ['Term', 'Property', 'Label']
 
 RDFS = Namespace('http://www.w3.org/2000/01/rdf-schema#')
+
 
 class Term(object):
     def __init__(self, predicate, default=None):
@@ -29,6 +30,7 @@ class Term(object):
     def triples(self, subject, object):
         yield Triple(subject, self.predicate, object)
 
+
 class Property(Term):
     def to_python(self, graph, value):
         if isinstance(value, Literal):
@@ -42,11 +44,13 @@ class Property(Term):
         else:
             return value
 
+
 class Label(Property):
     def resolve_subject(self, graph, uri):
         for label in graph.objects(uri, RDFS.label):
             return self.to_python(graph, label)
         return uri
+
 
 class Relationship(Property):
     def __init__(self, class_, predicate):

@@ -8,6 +8,7 @@ from telescope.mapper.query import Query
 
 __all__ = ['Mapper', 'mapper', 'get_mapper']
 
+
 class Mapper(object):
     def __init__(self, class_, type_or_select, identifier=None, properties=None):
         self.class_ = class_
@@ -51,9 +52,11 @@ class Mapper(object):
             self.bind_instance(graph, instance, data)
             yield instance
 
+
 def mapper(class_, *args, **kwargs):
     class_._mapper = Mapper(class_, *args, **kwargs)
     return class_._mapper
+
 
 def get_mapper(class_):
     return class_._mapper

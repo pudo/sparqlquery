@@ -4,6 +4,7 @@ from telescope.sparql.expressions import and_
 __all__ = ['Triple', 'TriplesSameSubject', 'Filter', 'GraphPattern',
            'GroupGraphPattern', 'UnionGraphPattern', 'union', 'optional']
 
+
 class Triple(object):
     def __init__(self, subject, predicate, object):
         self.subject = subject
@@ -23,8 +24,10 @@ class Triple(object):
         else:
             return cls(*obj)
 
+
 class TriplesBlock(object):
     pass
+
 
 class TriplesSameSubject(TriplesBlock):
     def __init__(self, subject, predicate_object_list=()):
@@ -61,12 +64,14 @@ class TriplesSameSubject(TriplesBlock):
                 predicate_object_list.append(pair)
         return self._clone(predicate_object_list=tuple(predicate_object_list))
 
+
 class Filter(object):
     def __init__(self, constraint):
         self.constraint = constraint
     
     def __repr__(self):
         return "Filter(%r)" % (self.constraint,)
+
 
 class GraphPattern(object):
     def __init__(self, patterns):
@@ -113,20 +118,23 @@ class GraphPattern(object):
                 obj = [obj]
             return cls(obj, **kwargs)
 
+
 class GroupGraphPattern(GraphPattern):
     def __init__(self, patterns, optional=False):
         super(GroupGraphPattern, self).__init__(patterns)
         self.optional = optional
 
+
 class UnionGraphPattern(GraphPattern):
     def __init__(self, patterns):
         super(UnionGraphPattern, self).__init__(patterns)
 
-# Helpers. Normally imported from telescope.sparql.helpers.
 
+# Helpers. Normally imported from telescope.sparql.helpers.
 def union(*patterns):
     from telescope.sparql.patterns import UnionGraphPattern, GraphPattern
     return UnionGraphPattern(map(GraphPattern.from_obj, patterns))
+
 
 def optional(*patterns):
     from telescope.sparql.patterns import GroupGraphPattern

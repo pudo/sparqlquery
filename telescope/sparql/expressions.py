@@ -1,9 +1,6 @@
 import weakref
 import operator
-try:
-    from rdflib import Variable
-except ImportError:
-    from rdflib.term import Variable
+from rdflib import Variable
 
 __all__ = ['Expression', 'BinaryExpression', 'ConditionalExpression',
            'VariableExpressionConstructor', 'and_', 'or_']
@@ -13,6 +10,7 @@ binary = lambda op: lambda self, other: BinaryExpression(op, self, other)
 binary.r = lambda op: lambda self, other: BinaryExpression(op, other, self)
 conditional = lambda op: lambda self, other: ConditionalExpression(op, (self, other))
 conditional.r = lambda op: lambda self, other: ConditionalExpression(op, (other, self))
+
 
 class Expression(object):
     def __init__(self, value, operator=None, lang=None, type=None):
@@ -91,6 +89,7 @@ class Expression(object):
     __div__ = binary(operator.div)
     __rdiv__ = binary.r(operator.div)
 
+
 class BinaryExpression(Expression):
     def __init__(self, operator, left, right):
         super(BinaryExpression, self).__init__(None, operator)
@@ -100,6 +99,7 @@ class BinaryExpression(Expression):
     def __repr__(self):
         return "BinaryExpression(%r, %r, %r)" % (self.operator, self.left, self.right)
 
+
 class ConditionalExpression(Expression):
     def __init__(self, operator, operands):
         super(ConditionalExpression, self).__init__(None, operator)
@@ -108,11 +108,14 @@ class ConditionalExpression(Expression):
     def __repr__(self):
         return "ConditionalExpression(%r, %r)" % (self.operator, self.operands)
 
+
 def and_(*operands):
     return ConditionalExpression(operator.and_, operands)
 
+
 def or_(*operands):
     return ConditionalExpression(operator.or_, operands)
+
 
 class VariableExpression(Expression):
     _VARIABLES = weakref.WeakValueDictionary()
@@ -138,6 +141,7 @@ class VariableExpression(Expression):
     def __getitem__(self, predicate_object_list):
         from telescope.sparql.patterns import TriplesSameSubject
         return TriplesSameSubject(self)[predicate_object_list]
+
 
 class VariableExpressionConstructor(object):
     def __call__(self, name):

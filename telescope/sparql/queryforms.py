@@ -1,7 +1,10 @@
-from telescope.exceptions import *
-from telescope.sparql.query import *
+from telescope.exceptions import InvalidRequestError
+from telescope.sparql.query import SPARQLQuery, SolutionModifierSupportingQuery
+from telescope.sparql.query import ProjectionSupportingQuery
+
 
 __all__ = ['Ask', 'Construct', 'Select', 'Describe']
+
 
 class Ask(SPARQLQuery):
     """Programmatically build a SPARQL ASK query."""

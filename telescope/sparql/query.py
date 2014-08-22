@@ -1,8 +1,10 @@
 from telescope.sparql.patterns import GroupGraphPattern
+from telescope.sparql.helpers import v
 from telescope.sparql.util import to_variable, to_list
 
 __all__ = ['SPARQLQuery', 'SolutionModifierSupportingQuery',
            'ProjectionSupportingQuery']
+
 
 class SPARQLQuery(object):
     """Programmatically build a SPARQL query."""

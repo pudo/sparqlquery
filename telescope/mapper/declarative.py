@@ -1,6 +1,7 @@
 from telescope.mapper import mapper
 from telescope.mapper.properties import PropertyManager, Term
 
+
 class DeclarativeMeta(type):
     def __init__(cls, name, bases, attrs):
         manager = cls._manager = PropertyManager(cls)
@@ -12,6 +13,7 @@ class DeclarativeMeta(type):
                 manager.add_property(key, value)
         if hasattr(cls, 'RDF_TYPE'):
             mapper(cls, cls.RDF_TYPE)
+
 
 class Subject(object):
     __metaclass__ = DeclarativeMeta
