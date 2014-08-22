@@ -1,10 +1,9 @@
 from telescope import Variable
-from telescope.exceptions import *
-from telescope.sparql.patterns import Triple
+from telescope.exceptions import InvalidRequestError
 from telescope.sparql.queryforms import Select
 from telescope.sparql.helpers import is_a
 from telescope.mapper.properties import PropertyManager
-from telescope.mapper.query import Query
+
 
 __all__ = ['Mapper', 'mapper', 'get_mapper']
 

@@ -1,5 +1,6 @@
 from telescope.mapper.query import Query
 
+
 class Session(object):
     def __init__(self, graph=None):
         self.identity_map = {}

@@ -1,5 +1,6 @@
 from telescope import Variable
 
+
 class Query(object):
     def __init__(self, class_, session=None):
         self.class_ = class_
@@ -18,7 +19,7 @@ class Query(object):
     def execute(self, graph=None):
         if graph is None:
             graph = self.session.graph
-        manager = self.class_._manager
+        # manager = self.class_._manager
         mapper = self.class_._mapper
         variables = map(Variable, self.class_._manager.properties)
         triples = []
@@ -29,8 +30,8 @@ class Query(object):
         return mapper.bind_results(graph, select, results)
     
     def filter(self, *constraints, **kwargs):
-        manager = self.class_._manager
-        mapper = self.class_._mapper
+        # manager = self.class_._manager
+        # mapper = self.class_._mapper
         triples = []
         for key, value in kwargs.iteritems():
             property = self.class_._manager[key]

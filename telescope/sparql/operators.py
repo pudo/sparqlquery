@@ -7,6 +7,7 @@ __all__ = ['Operator', 'FunctionCall', 'OperatorConstructor',
 
 not_ = invert
 
+
 class Operator(object):
     def __init__(self, operator):
         self.operator = operator
@@ -17,6 +18,7 @@ class Operator(object):
     def __repr__(self):
         return "Operator(%r)" % (self.operator,)
 
+
 class FunctionCall(Expression):
     def __init__(self, operator, arg_list):
         super(FunctionCall, self).__init__(None, operator)
@@ -24,6 +26,7 @@ class FunctionCall(Expression):
     
     def __repr__(self):
         return "FunctionCall(%r, %r)" % (self.operator, self.arg_list)
+
 
 class OperatorConstructor(object):
     def __init__(self, namespace):
@@ -40,6 +43,7 @@ class OperatorConstructor(object):
     
     def __getitem__(self, operator):
         return getattr(self, operator.replace('-', '_'))
+
 
 class BuiltinOperatorConstructor(OperatorConstructor):
     def __init__(self):
