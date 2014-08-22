@@ -13,9 +13,11 @@ setup(
     author="Brian Beck",
     description="RDF data mapper and SPARQL query builder",
     url='http://code.google.com/p/telescope/',
-    packages=find_packages('lib'),
-    package_dir={'': 'lib'},
-    install_requires=['rdflib<3a'],
+    packages=find_packages(),
+    #package_dir={'': 'lib'},
+    install_requires=[
+        'rdflib>=4.0.0'
+    ],
     test_suite='nose.collector',
     tests_require=['nose']
 )
