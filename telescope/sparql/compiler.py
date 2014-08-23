@@ -22,12 +22,13 @@ from operator import itemgetter
 from rdflib import Literal, URIRef, Namespace
 #from telescope.exceptions import *
 from telescope.sparql.expressions import ConditionalExpression
+from telescope.sparql.expressions import ListExpression
 from telescope.sparql.expressions import BinaryExpression, Expression
 from telescope.sparql import operators
 from telescope.sparql.operators import FunctionCall
 from telescope.sparql.patterns import GroupGraphPattern, UnionGraphPattern
 from telescope.sparql.patterns import GraphPattern, TriplesSameSubject
-from telescope.sparql.patterns import Triple
+from telescope.sparql.patterns import GraphGraphPattern, Triple
 #from telescope.sparql.query import *
 #from telescope.sparql.queryforms import *
 from telescope.sparql.helpers import RDF, XSD, is_a
@@ -95,6 +96,8 @@ class ExpressionCompiler(SPARQLCompiler):
                 return join(self.conditional(expression))
             elif isinstance(expression, BinaryExpression):
                 return join(self.binary(expression))
+            elif isinstance(expression, ListExpression):
+                return join(self.list(expression))
             elif isinstance(expression, FunctionCall):
                 return join(self.function(expression), '')
             elif isinstance(expression, Expression):
@@ -167,6 +170,13 @@ class ExpressionCompiler(SPARQLCompiler):
         yield self.compile(expression.left, left_bracketed)
         yield self.operator(expression.operator)
         yield self.compile(expression.right, right_bracketed)
+
+    def list(self, expression):
+        yield self.compile(expression.comp)
+        yield 'IN'
+        yield '('
+        yield join([self.compile(item) for item in expression.items], ', ')
+        yield ')'
     
     def function(self, expression):
         yield self.operator(expression.operator)

@@ -89,6 +89,11 @@ class Expression(object):
     __div__ = binary(operator.div)
     __rdiv__ = binary.r(operator.div)
 
+    # List check.
+
+    def in_(self, *items):
+        return ListExpression(self, items)
+
 
 class BinaryExpression(Expression):
     def __init__(self, operator, left, right):
@@ -98,6 +103,16 @@ class BinaryExpression(Expression):
 
     def __repr__(self):
         return "BinaryExpression(%r, %r, %r)" % (self.operator, self.left, self.right)
+
+
+class ListExpression(Expression):
+    def __init__(self, comp, items):
+        super(ListExpression, self).__init__(None, None)
+        self.comp = comp
+        self.items = items
+
+    def __repr__(self):
+        return "ListExpression(%r, %r)" % (self.comp, self.items)
 
 
 class ConditionalExpression(Expression):
