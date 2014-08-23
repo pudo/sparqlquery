@@ -81,8 +81,10 @@ class GraphPattern(object):
         self.pattern(*patterns)
     
     def pattern(self, *patterns):
+        from telescope.sparql.query import SPARQLQuery
         for pattern in patterns:
-            if not isinstance(pattern, (Triple, TriplesBlock, GraphPattern)):
+            if not isinstance(pattern, (Triple, SPARQLQuery,
+                                        TriplesBlock, GraphPattern)):
                 pattern = Triple.from_obj(pattern)
             self.patterns.append(pattern)
     

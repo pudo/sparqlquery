@@ -238,6 +238,7 @@ class QueryCompiler(SPARQLCompiler):
         yield join(self.graph_pattern(select._where))
     
     def graph_pattern(self, graph_pattern, braces=True):
+        from telescope.sparql.query import SPARQLQuery
         if isinstance(graph_pattern, GroupGraphPattern):
             if graph_pattern.optional:
                 yield 'OPTIONAL'
@@ -253,6 +254,12 @@ class QueryCompiler(SPARQLCompiler):
             pattern = patterns.pop(0)
             if isinstance(pattern, Triple):
                 yield join(self.triple(pattern))
+                if patterns or filters:
+                    yield '.'
+            elif isinstance(pattern, SPARQLQuery):
+                yield '{'
+                yield pattern.compile()
+                yield '}'
                 if patterns or filters:
                     yield '.'
             elif isinstance(pattern, TriplesSameSubject):
