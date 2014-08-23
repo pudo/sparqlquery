@@ -116,17 +116,16 @@ class ExpressionCompiler(SPARQLCompiler):
         return self.get_precedence(a) < self.get_precedence(b)
     
     def uri(self, uri):
-        if uri is not is_a:
-            namespace, fragment = defrag(uri)
-            namespace = URIRef(namespace)
-            try:
-                prefix = self.prefix_map[namespace]
-            except KeyError:
-                return self.term(uri, False)
-            else:
-                return '%s:%s' % (prefix, fragment)
-        else:
+        if uri is is_a:
             return 'a'
+        namespace, fragment = defrag(uri)
+        try:
+            namespace = URIRef(namespace)
+            prefix = self.prefix_map[namespace]
+        except (KeyError, TypeError):
+            return self.term(uri, False)
+        else:
+            return '%s:%s' % (prefix, fragment)
     
     def term(self, term, use_prefix=True):
         if term is None:
