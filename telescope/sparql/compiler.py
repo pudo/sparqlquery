@@ -244,7 +244,8 @@ class QueryCompiler(SPARQLCompiler):
                 yield 'OPTIONAL'
                 braces = True
         elif isinstance(graph_pattern, GraphGraphPattern):
-            yield 'GRAPH %s' % graph_pattern.graph.n3()
+            yield 'GRAPH'
+            yield self.expression(graph_pattern.graph)
             braces = True
         if braces:
             yield '{'
