@@ -92,3 +92,13 @@ class BuiltinOperatorConstructor(OperatorConstructor):
         params = [text, pattern] + (flags and [flags] or [])
         return Operator('regex')(*params)
 
+
+class FunctionConstructor(object):
+    def __call__(self, name):
+        return Operator(name)
+    
+    def __getattr__(self, name):
+        return self(name)
+    
+    def __getitem__(self, name):
+        return self(name)
