@@ -139,6 +139,12 @@ class GraphGraphPattern(GraphPattern):
         super(GraphGraphPattern, self).__init__(patterns)
 
 
+class FilterGraphPattern(GraphPattern):
+    def __init__(self, filters):
+        super(FilterGraphPattern, self).__init__([])
+        self.filter(*filters)
+
+
 # Helpers. Normally imported from telescope.sparql.helpers.
 def union(*patterns):
     from telescope.sparql.patterns import UnionGraphPattern, GraphPattern
@@ -153,3 +159,8 @@ def optional(*patterns):
 def graph(graph, *patterns):
     from telescope.sparql.patterns import GraphGraphPattern
     return GraphGraphPattern(graph, patterns)
+
+
+def filter(*filters):
+    from telescope.sparql.patterns import FilterGraphPattern
+    return FilterGraphPattern(filters)
