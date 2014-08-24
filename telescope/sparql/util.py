@@ -1,5 +1,6 @@
 from rdflib import Variable
 from telescope.sparql.expressions import Expression
+from telescope.sparql.operators import FunctionCall
 
 
 def defrag(uri, prefix_map=None):
@@ -26,6 +27,8 @@ def to_qname(uri, prefix_map):
 
 
 def to_variable(obj):
+    if isinstance(obj, FunctionCall):
+        return obj
     while isinstance(obj, Expression):
         obj = obj.value
     if isinstance(obj, Variable):
