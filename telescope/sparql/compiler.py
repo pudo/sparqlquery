@@ -196,12 +196,13 @@ class QueryCompiler(SPARQLCompiler):
             expression_compiler = expression_compiler(self.prefix_map)
         self.expression_compiler = expression_compiler
     
-    def compile(self, query):
+    def compile(self, query, render_prefixes=True):
         """Compile `query` and return the resulting string.
         
         `query` is a `telescope.sparql.query.SPARQLQuery` instance.
         
         """
+        self.render_prefixes = render_prefixes
         return join(self.clauses(query), '\n')
     
     def expression(self, expression, bracketed=False):
@@ -221,9 +222,10 @@ class QueryCompiler(SPARQLCompiler):
         yield join(self.where(query))
     
     def prefixes(self):
-        prefixes = sorted(self.prefix_map.iteritems(), key=itemgetter(1))
-        for namespace, prefix in prefixes:
-            yield join(self.prefix(prefix, namespace))
+        if self.render_prefixes:
+            prefixes = sorted(self.prefix_map.iteritems(), key=itemgetter(1))
+            for namespace, prefix in prefixes:
+                yield join(self.prefix(prefix, namespace))
     
     def prefix(self, prefix, namespace):
         yield 'PREFIX'
@@ -259,7 +261,8 @@ class QueryCompiler(SPARQLCompiler):
                     yield '.'
             elif isinstance(pattern, SPARQLQuery):
                 yield '{'
-                yield pattern.compile()
+                yield pattern.compile(prefix_map=self.prefix_map,
+                                      render_prefixes=False)
                 yield '}'
                 if patterns or filters:
                     yield '.'

@@ -72,7 +72,7 @@ class SPARQLQuery(object):
         from telescope.sparql.compiler import QueryCompiler
         return QueryCompiler
 
-    def compile(self, prefix_map=None, compiler_class=None):
+    def compile(self, prefix_map=None, compiler_class=None, render_prefixes=True):
         """Compile this query and return the resulting string.
         
         If `prefix_map` is given, use it as a mapping from `rdflib.Namespace`
@@ -81,7 +81,7 @@ class SPARQLQuery(object):
         """
         compiler_class = self._get_compiler_class()
         compiler = compiler_class(prefix_map)
-        return compiler.compile(self)
+        return compiler.compile(self, render_prefixes=render_prefixes)
 
 
 class SolutionModifierSupportingQuery(SPARQLQuery):
