@@ -1,5 +1,5 @@
-from telescope.mapper import mapper
-from telescope.mapper.properties import PropertyManager, Term
+from sparqlquery.mapper import mapper
+from sparqlquery.mapper.properties import PropertyManager, Term
 
 
 class DeclarativeMeta(type):

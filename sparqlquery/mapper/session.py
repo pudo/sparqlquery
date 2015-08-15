@@ -1,4 +1,4 @@
-from telescope.mapper.query import Query
+from sparqlquery.mapper.query import Query
 
 
 class Session(object):

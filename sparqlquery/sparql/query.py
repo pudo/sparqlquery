@@ -1,6 +1,6 @@
-from telescope.sparql.patterns import GroupGraphPattern
-from telescope.sparql.helpers import v
-from telescope.sparql.util import to_variable, to_list
+from sparqlquery.sparql.patterns import GroupGraphPattern
+from sparqlquery.sparql.helpers import v
+from sparqlquery.sparql.util import to_variable, to_list
 
 __all__ = ['SPARQLQuery', 'SolutionModifierSupportingQuery',
            'ProjectionSupportingQuery']
@@ -69,7 +69,7 @@ class SPARQLQuery(object):
         return graph.query(unicode(self.compile(prefix_map)))
     
     def _get_compiler_class(self):
-        from telescope.sparql.compiler import QueryCompiler
+        from sparqlquery.sparql.compiler import QueryCompiler
         return QueryCompiler
 
     def compile(self, prefix_map=None, compiler_class=None, render_prefixes=True):
@@ -111,7 +111,7 @@ class SolutionModifierSupportingQuery(SPARQLQuery):
             raise ValueError("Indexing is not supported.")
     
     def _get_compiler_class(self):
-        from telescope.sparql.compiler import SolutionModifierSupportingQueryCompiler
+        from sparqlquery.sparql.compiler import SolutionModifierSupportingQueryCompiler
         return SolutionModifierSupportingQueryCompiler
 
     def order_by(self, *expressions):
@@ -153,7 +153,7 @@ class ProjectionSupportingQuery(SolutionModifierSupportingQuery):
         self.projection = tuple(projection)
     
     def _get_compiler_class(self):
-        from telescope.sparql.compiler import ProjectionSupportingQueryCompiler
+        from sparqlquery.sparql.compiler import ProjectionSupportingQueryCompiler
         return ProjectionSupportingQueryCompiler
 
     def project(self, *terms, **kwargs):

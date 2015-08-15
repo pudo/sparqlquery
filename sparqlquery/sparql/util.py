@@ -1,6 +1,6 @@
 from rdflib import Variable
-from telescope.sparql.expressions import Expression
-from telescope.sparql.operators import FunctionCall
+from sparqlquery.sparql.expressions import Expression
+from sparqlquery.sparql.operators import FunctionCall
 
 
 def defrag(uri, prefix_map=None):

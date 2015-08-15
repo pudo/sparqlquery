@@ -45,7 +45,7 @@ class Expression(object):
         return self._clone(datatype=datatype)
     
     def compile(self, prefix_map=None):
-        from telescope.sparql.compiler import ExpressionCompiler
+        from sparqlquery.sparql.compiler import ExpressionCompiler
         return ExpressionCompiler(prefix_map).compile(self)
 
     # Special operators.
@@ -154,7 +154,7 @@ class VariableExpression(Expression):
             self._initialized = True
     
     def __getitem__(self, predicate_object_list):
-        from telescope.sparql.patterns import TriplesSameSubject
+        from sparqlquery.sparql.patterns import TriplesSameSubject
         return TriplesSameSubject(self)[predicate_object_list]
 
 

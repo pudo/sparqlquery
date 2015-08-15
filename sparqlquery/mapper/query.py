@@ -1,4 +1,4 @@
-from telescope import Variable
+from sparqlquery import Variable
 
 
 class Query(object):

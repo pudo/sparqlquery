@@ -1,8 +1,8 @@
 import operator
 from nose.tools import assert_raises
 from rdflib import Variable, Namespace, URIRef, Literal, BNode
-from telescope.sparql.expressions import *
-from telescope.sparql.helpers import XSD
+from sparqlquery.sparql.expressions import *
+from sparqlquery.sparql.helpers import XSD
 import helpers
 
 class TestCreatingExpression:

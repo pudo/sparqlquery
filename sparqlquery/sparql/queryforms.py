@@ -1,6 +1,6 @@
-from telescope.exceptions import InvalidRequestError
-from telescope.sparql.query import SPARQLQuery, SolutionModifierSupportingQuery
-from telescope.sparql.query import ProjectionSupportingQuery
+from sparqlquery.exceptions import InvalidRequestError
+from sparqlquery.sparql.query import SPARQLQuery, SolutionModifierSupportingQuery
+from sparqlquery.sparql.query import ProjectionSupportingQuery
 
 
 __all__ = ['Ask', 'Construct', 'Select', 'Describe']
@@ -24,7 +24,7 @@ class Construct(SolutionModifierSupportingQuery):
         self._template = template
 
     def _get_compiler_class(self):
-        from telescope.sparql.compiler import ConstructCompiler
+        from sparqlquery.sparql.compiler import ConstructCompiler
         return ConstructCompiler
     
     def template(self, template):
@@ -46,7 +46,7 @@ class Select(ProjectionSupportingQuery):
         self._reduced = reduced
 
     def _get_compiler_class(self):
-        from telescope.sparql.compiler import SelectCompiler
+        from sparqlquery.sparql.compiler import SelectCompiler
         return SelectCompiler
     
     def distinct(self, flag=True):

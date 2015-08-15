@@ -1,9 +1,9 @@
 from nose.tools import assert_raises
-from telescope import Namespace, ConjunctiveGraph, Variable, BNode, URIRef
-from telescope.mapper import Mapper, mapper
-from telescope.mapper.properties import Property, Relationship
-from telescope.mapper.query import Query
-from telescope.mapper.session import Session
+from sparqlquery import Namespace, ConjunctiveGraph, Variable, BNode, URIRef
+from sparqlquery.mapper import Mapper, mapper
+from sparqlquery.mapper.properties import Property, Relationship
+from sparqlquery.mapper.query import Query
+from sparqlquery.mapper.session import Session
 import helpers
 
 RDF = Namespace('http://www.w3.org/1999/02/22-rdf-syntax-ns#')

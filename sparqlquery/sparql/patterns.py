@@ -1,5 +1,5 @@
 import warnings
-from telescope.sparql.expressions import and_
+from sparqlquery.sparql.expressions import and_
 
 __all__ = ['Triple', 'TriplesSameSubject', 'Filter', 'GraphPattern',
            'GroupGraphPattern', 'UnionGraphPattern', 'union',
@@ -81,7 +81,7 @@ class GraphPattern(object):
         self.pattern(*patterns)
     
     def pattern(self, *patterns):
-        from telescope.sparql.query import SPARQLQuery
+        from sparqlquery.sparql.query import SPARQLQuery
         for pattern in patterns:
             if not isinstance(pattern, (Triple, SPARQLQuery,
                                         TriplesBlock, GraphPattern)):
@@ -145,22 +145,22 @@ class FilterGraphPattern(GraphPattern):
         self.filter(*filters)
 
 
-# Helpers. Normally imported from telescope.sparql.helpers.
+# Helpers. Normally imported from sparqlquery.sparql.helpers.
 def union(*patterns):
-    from telescope.sparql.patterns import UnionGraphPattern, GraphPattern
+    from sparqlquery.sparql.patterns import UnionGraphPattern, GraphPattern
     return UnionGraphPattern(map(GraphPattern.from_obj, patterns))
 
 
 def optional(*patterns):
-    from telescope.sparql.patterns import GroupGraphPattern
+    from sparqlquery.sparql.patterns import GroupGraphPattern
     return GroupGraphPattern(patterns, optional=True)
 
 
 def graph(graph, *patterns):
-    from telescope.sparql.patterns import GraphGraphPattern
+    from sparqlquery.sparql.patterns import GraphGraphPattern
     return GraphGraphPattern(graph, patterns)
 
 
 def filter(*filters):
-    from telescope.sparql.patterns import FilterGraphPattern
+    from sparqlquery.sparql.patterns import FilterGraphPattern
     return FilterGraphPattern(filters)

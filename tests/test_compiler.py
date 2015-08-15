@@ -1,14 +1,14 @@
 import re
 from nose.tools import assert_raises, assert_equal
 from rdflib import Variable, Namespace, Literal, URIRef
-from telescope.sparql.expressions import Expression
-from telescope.sparql import operators
-from telescope.sparql.operators import Operator, FunctionCall
-from telescope.sparql.patterns import *
-from telescope.sparql.query import *
-from telescope.sparql.queryforms import *
-from telescope.sparql.compiler import *
-from telescope.sparql.helpers import *
+from sparqlquery.sparql.expressions import Expression
+from sparqlquery.sparql import operators
+from sparqlquery.sparql.operators import Operator, FunctionCall
+from sparqlquery.sparql.patterns import *
+from sparqlquery.sparql.query import *
+from sparqlquery.sparql.queryforms import *
+from sparqlquery.sparql.compiler import *
+from sparqlquery.sparql.helpers import *
 import helpers
 
 FOAF = Namespace('http://xmlns.com/foaf/0.1/')

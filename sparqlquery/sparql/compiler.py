@@ -20,19 +20,19 @@ For example, `QueryCompiler.compile()` joins the tokens yielded by calling
 """
 from operator import itemgetter
 from rdflib import Literal, URIRef, Namespace
-#from telescope.exceptions import *
-from telescope.sparql.expressions import ConditionalExpression
-from telescope.sparql.expressions import ListExpression
-from telescope.sparql.expressions import BinaryExpression, Expression
-from telescope.sparql import operators
-from telescope.sparql.operators import FunctionCall
-from telescope.sparql.patterns import GroupGraphPattern, UnionGraphPattern
-from telescope.sparql.patterns import GraphPattern, TriplesSameSubject
-from telescope.sparql.patterns import GraphGraphPattern, Triple
-#from telescope.sparql.query import *
-#from telescope.sparql.queryforms import *
-from telescope.sparql.helpers import RDF, XSD, is_a
-from telescope.sparql.util import defrag, to_list
+#from sparqlquery.exceptions import *
+from sparqlquery.sparql.expressions import ConditionalExpression
+from sparqlquery.sparql.expressions import ListExpression
+from sparqlquery.sparql.expressions import BinaryExpression, Expression
+from sparqlquery.sparql import operators
+from sparqlquery.sparql.operators import FunctionCall
+from sparqlquery.sparql.patterns import GroupGraphPattern, UnionGraphPattern
+from sparqlquery.sparql.patterns import GraphPattern, TriplesSameSubject
+from sparqlquery.sparql.patterns import GraphGraphPattern, Triple
+#from sparqlquery.sparql.query import *
+#from sparqlquery.sparql.queryforms import *
+from sparqlquery.sparql.helpers import RDF, XSD, is_a
+from sparqlquery.sparql.util import defrag, to_list
 
 __all__ = ['SPARQLCompiler', 'ExpressionCompiler', 'QueryCompiler',
            'SolutionModifierSupportingQueryCompiler',
@@ -199,7 +199,7 @@ class QueryCompiler(SPARQLCompiler):
     def compile(self, query, render_prefixes=True):
         """Compile `query` and return the resulting string.
         
-        `query` is a `telescope.sparql.query.SPARQLQuery` instance.
+        `query` is a `sparqlquery.sparql.query.SPARQLQuery` instance.
         
         """
         self.render_prefixes = render_prefixes
@@ -240,7 +240,7 @@ class QueryCompiler(SPARQLCompiler):
         yield join(self.graph_pattern(select._where))
     
     def graph_pattern(self, graph_pattern, braces=True):
-        from telescope.sparql.query import SPARQLQuery
+        from sparqlquery.sparql.query import SPARQLQuery
         if isinstance(graph_pattern, GroupGraphPattern):
             if graph_pattern.optional:
                 yield 'OPTIONAL'

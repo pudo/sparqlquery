@@ -1,7 +1,7 @@
-from telescope import Namespace, Variable, URIRef
-from telescope.sparql.expressions import Expression
-from telescope.sparql.operators import *
-from telescope.sparql.helpers import *
+from sparqlquery import Namespace, Variable, URIRef
+from sparqlquery.sparql.expressions import Expression
+from sparqlquery.sparql.operators import *
+from sparqlquery.sparql.helpers import *
 import helpers
 
 FUNC = Namespace('http://example.org/func#')

@@ -5,25 +5,26 @@ try:
 except ImportError:
     from rdflib.graph import ConjunctiveGraph
     from rdflib.term import Namespace, Variable
-from telescope import *
-from telescope.sparql.helpers import subject
-from telescope.properties import *
-from telescope.mapper import *
-from telescope.declarative import Subject
+
+from sparqlquery import *
+from sparqlquery.sparql.helpers import subject
+from sparqlquery.properties import *
+from sparqlquery.mapper import *
+from sparqlquery.declarative import Subject
 
 RDF = Namespace('http://www.w3.org/1999/02/22-rdf-syntax-ns#')
 PTREC = Namespace('tag:info@semanticdb.ccf.org,2007:PatientRecordTerms#')
 DNODE = Namespace('http://www.clevelandclinic.org/heartcenter/ontologies/DataNodes.owl#')
 
 PREFIX_MAP = {PTREC: 'ptrec', DNODE: 'dnode'}
-   
+
 class Patient(Subject):
     RDF_TYPE = PTREC.Patient
     ccfid = Property(PTREC.hasCCFID)
     ssn = Property(PTREC.hasSocialSecurityNumber)
     race = Label(PTREC.hasRace)
     sex = Label(PTREC.hasSex)
-    
+
     def __repr__(self):
         return "Patient(%r)" % (self.ccfid,)
 
@@ -31,7 +32,7 @@ class TemporalData(Subject):
     RDF_TYPE = PTREC.TemporalData
     min = Property(PTREC.hasDateTimeMin)
     max = Property(PTREC.hasDateTimeMax)
-    
+
     def __repr__(self):
         return "TemporalData(%r, %r)" % (self.min, self.max)
 
@@ -84,7 +85,6 @@ def get_index_event(cohort_line, graph=graph):
     ).filter(
         v.start_min >= surg_min, v.start_max < surg_max
     ).order_by(v.start_min).limit(1).offset(index)
-    
+
     # Return the query results.
     return query.execute(graph, PREFIX_MAP)
-

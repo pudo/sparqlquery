@@ -1,7 +1,7 @@
 from nose.tools import assert_raises
-from telescope import Variable
-from telescope.exceptions import *
-from telescope.sparql.queryforms import *
+from sparqlquery import Variable
+from sparqlquery.exceptions import *
+from sparqlquery.sparql.queryforms import *
 
 class TestAddingLimitModifier:
     def setup(self):

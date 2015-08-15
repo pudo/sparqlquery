@@ -1,5 +1,5 @@
-from telescope import Namespace, Literal, URIRef
-from telescope.sparql.patterns import Triple
+from sparqlquery import Namespace, Literal, URIRef
+from sparqlquery.sparql.patterns import Triple
 
 __all__ = ['Term', 'Property', 'Label']
 

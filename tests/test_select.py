@@ -1,9 +1,9 @@
 from nose.tools import assert_raises
-from telescope import Variable, Namespace
-from telescope.sparql.patterns import *
-from telescope.sparql.queryforms import Select
-from telescope.sparql.expressions import *
-from telescope.sparql.helpers import *
+from sparqlquery import Variable, Namespace
+from sparqlquery.sparql.patterns import *
+from sparqlquery.sparql.queryforms import Select
+from sparqlquery.sparql.expressions import *
+from sparqlquery.sparql.helpers import *
 
 FOAF = Namespace('http://xmlns.com/foaf/0.1/')
 
