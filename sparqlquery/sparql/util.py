@@ -1,4 +1,5 @@
 from rdflib import Variable
+
 from sparqlquery.sparql.expressions import Expression
 from sparqlquery.sparql.operators import FunctionCall
 

@@ -1,5 +1,6 @@
 from sparqlquery.exceptions import InvalidRequestError
-from sparqlquery.sparql.query import SPARQLQuery, SolutionModifierSupportingQuery
+from sparqlquery.sparql.query import SPARQLQuery
+from sparqlquery.sparql.query import SolutionModifierSupportingQuery
 from sparqlquery.sparql.query import ProjectionSupportingQuery
 
 
@@ -13,10 +14,10 @@ class Ask(SPARQLQuery):
 
 
 class Construct(SolutionModifierSupportingQuery):
-    """Programmatically build a SPARQL CONSTRUCT query."""
+    """ Programmatically build a SPARQL CONSTRUCT query. """
 
     query_form = 'CONSTRUCT'
-    
+
     def __init__(self, template, pattern=None, order_by=None, limit=None,
                  offset=None):
         super(Construct, self).__init__(pattern, order_by=order_by,
@@ -26,14 +27,14 @@ class Construct(SolutionModifierSupportingQuery):
     def _get_compiler_class(self):
         from sparqlquery.sparql.compiler import ConstructCompiler
         return ConstructCompiler
-    
+
     def template(self, template):
         return self._clone(_template=template)
 
 
 class Select(ProjectionSupportingQuery):
-    """Programmatically build a SPARQL SELECT query."""
-    
+    """ Programmatically build a SPARQL SELECT query. """
+
     query_form = 'SELECT'
 
     def __init__(self, projection, pattern=None, distinct=False,
@@ -41,36 +42,38 @@ class Select(ProjectionSupportingQuery):
         super(Select, self).__init__(projection, pattern, order_by=order_by,
                                      limit=limit, offset=offset)
         if distinct and reduced:
-            raise InvalidRequestError("DISTINCT and REDUCED are mutually exclusive.")
+            msg = "DISTINCT and REDUCED are mutually exclusive."
+            raise InvalidRequestError(msg)
         self._distinct = distinct
         self._reduced = reduced
 
     def _get_compiler_class(self):
         from sparqlquery.sparql.compiler import SelectCompiler
         return SelectCompiler
-    
+
     def distinct(self, flag=True):
         """
         Return a new `Select` with the DISTINCT modifier (or without it if
         `flag` is false).
-        
+
         If `flag` is true (the default), then `reduced` is forced to False.
-        
+
         """
-        return self._clone(_distinct=flag, _reduced=not flag and self._reduced)
-    
+        return self._clone(_distinct=flag,
+                           _reduced=not flag and self._reduced)
+
     def reduced(self, flag=True):
         """Return a new `Select` with the REDUCED modifier (or without it if
         `flag` is false).
-        
+
         If `flag` is true (the default), then `distinct` is forced to False.
-        
+
         """
-        return self._clone(_reduced=flag, _distinct=not flag and self._distinct)
+        return self._clone(_reduced=flag,
+                           _distinct=not flag and self._distinct)
 
 
 class Describe(ProjectionSupportingQuery):
-    """Programmatically build a SPARQL DESCRIBE query."""
+    """ Programmatically build a SPARQL DESCRIBE query. """
 
     query_form = 'DESCRIBE'
-

@@ -1,14 +1,14 @@
-class sparqlqueryError(Exception):
+class SparqlQueryError(Exception):
     pass
 
 
-class CompileError(sparqlqueryError):
+class CompileError(SparqlQueryError):
     pass
 
 
-class NotSupportedError(sparqlqueryError):
+class NotSupportedError(SparqlQueryError):
     pass
 
 
-class InvalidRequestError(sparqlqueryError):
+class InvalidRequestError(SparqlQueryError):
     pass
