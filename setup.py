@@ -1,7 +1,7 @@
 from setuptools import setup, find_packages
 
 setup(
-    name='sparlquery',
+    name='sparqlquery',
     version='0.2',
     keywords='rdf rdflib sparql orm',
     license='MIT',
