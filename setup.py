@@ -20,7 +20,6 @@ setup(
     description='SPARQL query builder, fork of sparqlquery',
     url='https://github.com/pudo/sparqlquery',
     packages=find_packages(),
-    #package_dir={'': 'lib'},
     install_requires=[
         'rdflib>=4.2.1'
     ],
