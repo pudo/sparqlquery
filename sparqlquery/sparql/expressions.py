@@ -18,7 +18,7 @@ class Expression(object):
         self.operator = operator
         self.language = lang
         self.datatype = type
-    
+
     def __repr__(self):
         value = self.value
         if hasattr(value, 'n3'):
@@ -35,55 +35,55 @@ class Expression(object):
         clone.__dict__.update(self.__dict__)
         clone.__dict__.update(kwargs)
         return clone
-    
+
     def _lang(self, language):
         """Emulates @lang."""
         return self._clone(language=language)
-    
+
     def _type(self, datatype):
         """Emulates ^^type."""
         return self._clone(datatype=datatype)
-    
+
     def compile(self, prefix_map=None):
         from sparqlquery.sparql.compiler import ExpressionCompiler
         return ExpressionCompiler(prefix_map).compile(self)
 
     # Special operators.
-    
+
     def __pow__(self, datatype):
         """Emulates ^^type."""
         return self._type(datatype)
-    
+
     # Logical operators.
-    
+
     __or__ = conditional(operator.or_)
     __ror__ = conditional.r(operator.or_)
     __and__ = conditional(operator.and_)
     __rand__ = conditional.r(operator.and_)
-    
+
     # Unary operators.
-    
+
     __pos__ = unary(operator.pos)
     __neg__ = unary(operator.neg)
     __invert__ = unary(operator.invert)
-    
+
     # Numeric operators.
-    
+
     __eq__ = binary(operator.eq)
     __ne__ = binary(operator.ne)
     __lt__ = binary(operator.lt)
     __gt__ = binary(operator.gt)
     __le__ = binary(operator.le)
     __ge__ = binary(operator.ge)
-    
+
     # Additive operators.
-    
+
     __add__ = binary(operator.add)
     __radd__ = binary.r(operator.add)
     __sub__ = binary(operator.sub)
-    
+
     # Multiplicative operators.
-    
+
     __mul__ = binary(operator.mul)
     __rmul__ = binary.r(operator.mul)
     __div__ = binary(operator.div)
@@ -94,6 +94,9 @@ class Expression(object):
     def in_(self, *items):
         return ListExpression(self, items)
 
+    def not_in(self, *items):
+        return ListExpression(self, items, inverted=True)
+
 
 class BinaryExpression(Expression):
     def __init__(self, operator, left, right):
@@ -102,17 +105,20 @@ class BinaryExpression(Expression):
         self.right = right
 
     def __repr__(self):
-        return "BinaryExpression(%r, %r, %r)" % (self.operator, self.left, self.right)
+        return "BinaryExpression(%r, %r, %r)" % (self.operator, self.left,
+                                                 self.right)
 
 
 class ListExpression(Expression):
-    def __init__(self, comp, items):
+    def __init__(self, comp, items, inverted=False):
         super(ListExpression, self).__init__(None, None)
         self.comp = comp
         self.items = items
+        self.inverted = inverted
 
     def __repr__(self):
-        return "ListExpression(%r, %r)" % (self.comp, self.items)
+        return "ListExpression(%r, %r, %r)" % (self.comp, self.items,
+                                               self.inverted)
 
 
 class ConditionalExpression(Expression):
@@ -134,7 +140,7 @@ def or_(*operands):
 
 class VariableExpression(Expression):
     _VARIABLES = weakref.WeakValueDictionary()
-    
+
     def __new__(cls, name):
         if isinstance(name, basestring):
             name = unicode(name)
@@ -147,12 +153,12 @@ class VariableExpression(Expression):
             return instance
         else:
             raise TypeError("Variable names must be strings.")
-    
+
     def __init__(self, name):
         if not self._initialized:
             super(VariableExpression, self).__init__(Variable(name))
             self._initialized = True
-    
+
     def __getitem__(self, predicate_object_list):
         from sparqlquery.sparql.patterns import TriplesSameSubject
         return TriplesSameSubject(self)[predicate_object_list]
@@ -161,9 +167,9 @@ class VariableExpression(Expression):
 class VariableExpressionConstructor(object):
     def __call__(self, name):
         return VariableExpression(name)
-    
+
     def __getattr__(self, name):
         return self(name)
-    
+
     def __getitem__(self, name):
         return self(name)

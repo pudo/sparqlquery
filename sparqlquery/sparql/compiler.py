@@ -50,19 +50,19 @@ class SPARQLCompiler(object):
     query strings.
 
     The `SPARQLCompiler` base class defines:
-    
+
     * A `prefix_map` attribute, which is a mapping of `rdflib.Namespace`
       instances to prefix names.  For example: {RDF: 'rdf'}
 
     * A `compile` method, which accepts a Python representation of some SPARQL
       concept and returns a string.
-    
+
     """
     def __init__(self, prefix_map=None):
         if prefix_map is None:
             prefix_map = {}
         self.prefix_map = prefix_map
-    
+
     def compile(self, obj):
         raise NotImplementedError
 
@@ -89,7 +89,7 @@ class ExpressionCompiler(SPARQLCompiler):
         operators.pos: '+', operators.neg: '-',
         operators.invert: '!', operators.inv: '!'
     }
-    
+
     def compile(self, expression, bracketed=False):
         if not bracketed:
             if isinstance(expression, ConditionalExpression):
@@ -106,15 +106,15 @@ class ExpressionCompiler(SPARQLCompiler):
                 return self.term(expression)
         else:
             return join(self.bracketed(expression), '')
-    
+
     def get_precedence(self, obj):
         if isinstance(obj, Expression):
             return self.PRECEDENCE.get(obj.operator, self.DEFAULT_PRECEDENCE)
         return self.DEFAULT_PRECEDENCE
-    
+
     def precedence_lt(self, a, b):
         return self.get_precedence(a) < self.get_precedence(b)
-    
+
     def uri(self, uri):
         if uri is is_a:
             return 'a'
@@ -126,7 +126,7 @@ class ExpressionCompiler(SPARQLCompiler):
             return self.term(uri, False)
         else:
             return '%s:%s' % (prefix, fragment)
-    
+
     def term(self, term, use_prefix=True):
         if term is None:
             return RDF.nil
@@ -140,7 +140,7 @@ class ExpressionCompiler(SPARQLCompiler):
         elif isinstance(term, Namespace):
             return unicode(term)
         return term.n3()
-    
+
     def operator(self, operator):
         token = self.OPERATORS.get(operator)
         if token:
@@ -149,12 +149,12 @@ class ExpressionCompiler(SPARQLCompiler):
             return self.uri(operator)
         else:
             return unicode(operator)
-    
+
     def bracketed(self, expression):
         yield '('
         yield self.compile(expression, False)
         yield ')'
-    
+
     def conditional(self, expression):
         operator = self.operator(expression.operator)
         for i, expr in enumerate(expression.operands):
@@ -162,7 +162,7 @@ class ExpressionCompiler(SPARQLCompiler):
                 yield operator
             bracketed = self.precedence_lt(expr, expression)
             yield self.compile(expr, bracketed)
-    
+
     def binary(self, expression):
         left_bracketed = self.precedence_lt(expression.left, expression)
         right_bracketed = self.precedence_lt(expression.right, expression)
@@ -170,19 +170,21 @@ class ExpressionCompiler(SPARQLCompiler):
         yield self.operator(expression.operator)
         yield self.compile(expression.right, right_bracketed)
 
-    def list(self, expression):
+    def list(self, expression, inverted=False):
         yield self.compile(expression.comp)
+        if expression.inverted:
+            yield 'NOT'
         yield 'IN'
         yield '('
         yield join([self.compile(item) for item in expression.items], ', ')
         yield ')'
-    
+
     def function(self, expression):
         yield self.operator(expression.operator)
         yield '('
         yield join([self.compile(arg) for arg in expression.arg_list], ', ')
         yield ')'
-    
+
     def unary(self, expression):
         if expression.operator:
             yield self.operator(expression.operator)
@@ -195,50 +197,50 @@ class QueryCompiler(SPARQLCompiler):
         if not isinstance(expression_compiler, ExpressionCompiler):
             expression_compiler = expression_compiler(self.prefix_map)
         self.expression_compiler = expression_compiler
-    
+
     def compile(self, query, render_prefixes=True):
         """Compile `query` and return the resulting string.
-        
+
         `query` is a `sparqlquery.sparql.query.SPARQLQuery` instance.
-        
+
         """
         self.render_prefixes = render_prefixes
         return join(self.clauses(query), '\n')
-    
+
     def expression(self, expression, bracketed=False):
         """
         Compile `expression` with this instance's `expression_compiler` and
         return (not yield) the resulting string.
-        
+
         If `bracketed` is true, the resulting string will be enclosed in
         parentheses.
-        
+
         """
         return self.expression_compiler.compile(expression, bracketed)
-    
+
     def clauses(self, query):
         yield join(self.prefixes(), '\n')
         yield join(self.query_form(query))
         yield join(self.where(query))
-    
+
     def prefixes(self):
         if self.render_prefixes:
             prefixes = sorted(self.prefix_map.iteritems(), key=itemgetter(1))
             for namespace, prefix in prefixes:
                 yield join(self.prefix(prefix, namespace))
-    
+
     def prefix(self, prefix, namespace):
         yield 'PREFIX'
         yield '%s:' % (prefix,)
         yield self.expression_compiler.term(namespace, False)
-    
+
     def query_form(self, query):
         yield query.query_form
 
     def where(self, select):
         yield 'WHERE'
         yield join(self.graph_pattern(select._where))
-    
+
     def graph_pattern(self, graph_pattern, braces=True):
         from sparqlquery.sparql.query import SPARQLQuery
         if isinstance(graph_pattern, GroupGraphPattern):
@@ -288,17 +290,17 @@ class QueryCompiler(SPARQLCompiler):
                 yield '.'
         if braces:
             yield '}'
-    
+
     def triple(self, triple):
         subject, predicate, object = triple
         yield self.expression(subject)
         yield self.expression(predicate)
         yield self.expression(object)
-    
+
     def triples_same_subject(self, triples):
         yield self.expression(triples.subject)
         yield join(self.predicate_object_list(triples.predicate_object_list))
-    
+
     def predicate_object_list(self, predicate_object_list):
         for i, (predicate, object_list) in enumerate(predicate_object_list):
             if i:
@@ -308,7 +310,7 @@ class QueryCompiler(SPARQLCompiler):
                 if j:
                     yield ','
                 yield self.expression(object)
-    
+
     def filter(self, filter):
         yield 'FILTER'
         constraint = filter.constraint
@@ -342,7 +344,7 @@ class SolutionModifierSupportingQueryCompiler(QueryCompiler):
         if query._limit is not None:
             yield 'LIMIT'
             yield query._limit
-    
+
     def offset(self, query):
         if query._offset not in (0, None):
             yield 'OFFSET'
@@ -380,7 +382,7 @@ class ConstructCompiler(SolutionModifierSupportingQueryCompiler):
             yield token
         for token in self.template(query):
             yield token
-    
+
     def template(self, query):
         yield '{'
         template = query._template
@@ -392,4 +394,3 @@ class ConstructCompiler(SolutionModifierSupportingQueryCompiler):
             for token in self.graph_pattern(template, False):
                 yield token
         yield '}'
-
