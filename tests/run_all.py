@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!../pyenv/bin/python2
 import pkg_resources
 pkg_resources.require('nose')
 import nose

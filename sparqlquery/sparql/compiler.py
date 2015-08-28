@@ -362,7 +362,7 @@ class ProjectionSupportingQueryCompiler(SolutionModifierSupportingQueryCompiler)
             yield token
 
     def projection(self, query):
-        if Variable('*') in map(unicode, query.projection):
+        if '*' in map(unicode, query.projection):
             yield '*'
         else:
             for term in query.projection:
