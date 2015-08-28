@@ -1,4 +1,4 @@
-from sparqlquery import Namespace, Literal, URIRef
+from sparqlquery import Namespace, Literal, URIRef, Variable
 from sparqlquery.sparql.patterns import Triple
 
 __all__ = ['Term', 'Property', 'Label']
@@ -75,18 +75,26 @@ class PropertyManager(object):
         self.properties = {}
     
     def __getitem__(self, key):
+        assert isinstance(key, Variable)
         return self.properties[key]
     
     def __setitem__(self, key, value):
+        assert isinstance(key, basestring)
+        assert isinstance(value, Term)
         return self.add_property(key, value)
     
     def __iter__(self):
         return self.properties.iteritems()
     
     def get(self, key, default=None):
+        assert isinstance(key, Variable)
+        if default: assert isinstance(default, Term)
         return self.properties.get(key, default)
     
     def add_property(self, key, descriptor):
+        assert isinstance(key, basestring)
+        assert isinstance(descriptor, Term), (descriptor, type(descriptor))
+        key = Variable(key)
         self.names[descriptor] = key
         self.properties[key] = descriptor
         setattr(self.class_, key, descriptor)

@@ -20,6 +20,7 @@ For example, `QueryCompiler.compile()` joins the tokens yielded by calling
 """
 from operator import itemgetter
 from rdflib import Literal, URIRef, Namespace
+from rdflib.term import Variable
 #from sparqlquery.exceptions import *
 from sparqlquery.sparql.expressions import ConditionalExpression
 from sparqlquery.sparql.expressions import ListExpression
@@ -120,7 +121,7 @@ class ExpressionCompiler(SPARQLCompiler):
             return 'a'
         namespace, fragment = defrag(uri)
         try:
-            namespace = URIRef(namespace)
+            namespace = Namespace(namespace)
             prefix = self.prefix_map[namespace]
         except (KeyError, TypeError):
             return self.term(uri, False)
@@ -128,6 +129,8 @@ class ExpressionCompiler(SPARQLCompiler):
             return '%s:%s' % (prefix, fragment)
 
     def term(self, term, use_prefix=True):
+        if isinstance(term, Namespace):
+            term = URIRef(term)
         if term is None:
             return RDF.nil
         elif not hasattr(term, 'n3'):
@@ -135,7 +138,7 @@ class ExpressionCompiler(SPARQLCompiler):
         elif use_prefix and isinstance(term, URIRef):
             return self.uri(term)
         elif isinstance(term, Literal):
-            if term.datatype in (XSD.int, XSD.integer, XSD.float, XSD.boolean):
+            if term.datatype in (XSD.double, XSD.integer, XSD.float, XSD.boolean):
                 return unicode(term).lower()
         elif isinstance(term, Namespace):
             return unicode(term)
@@ -359,7 +362,7 @@ class ProjectionSupportingQueryCompiler(SolutionModifierSupportingQueryCompiler)
             yield token
 
     def projection(self, query):
-        if '*' in map(unicode, query.projection):
+        if Variable('*') in map(unicode, query.projection):
             yield '*'
         else:
             for term in query.projection:

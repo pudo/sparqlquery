@@ -1,3 +1,4 @@
+from __future__ import print_function
 import os
 from datetime import datetime, timedelta
 try:
@@ -8,9 +9,9 @@ except ImportError:
 
 from sparqlquery import *
 from sparqlquery.sparql.helpers import subject
-from sparqlquery.properties import *
+from sparqlquery.mapper.properties import *
 from sparqlquery.mapper import *
-from sparqlquery.declarative import Subject
+from sparqlquery.mapper.declarative import Subject
 
 RDF = Namespace('http://www.w3.org/1999/02/22-rdf-syntax-ns#')
 PTREC = Namespace('tag:info@semanticdb.ccf.org,2007:PatientRecordTerms#')
@@ -86,5 +87,16 @@ def get_index_event(cohort_line, graph=graph):
         v.start_min >= surg_min, v.start_max < surg_max
     ).order_by(v.start_min).limit(1).offset(index)
 
+    print(query.compile(PREFIX_MAP))
     # Return the query results.
     return query.execute(graph, PREFIX_MAP)
+
+def main():
+    import sys, pprint
+    assert len(sys.argv) == 4
+    res = get_index_event(" ".join(sys.argv[1:]))
+    print(pprint.pformat(vars(res)))
+    print(pprint.pformat([x for x in res]))
+
+if __name__ == "__main__":
+    main()
