@@ -25,6 +25,23 @@ class TestCreatingTriple:
         assert triple.object == "Alice"
         assert_raises(TypeError, Triple.from_obj, 1)
 
+    def test_from_obj_with_collection_pattern(self):
+        args = (Variable('x'), FOAF.name, ("Alice", Variable('restaurant')))
+        triple = Triple.from_obj(args)
+        assert triple.subject == Variable('x')
+        assert triple.predicate == FOAF.name
+        assert triple.object == ("Alice", Variable('restaurant'))
+        assert isinstance(triple.object, CollectionPattern)
+
+    def test_nested_collection_patterns(self):
+        args = (Variable('x'), FOAF.name, ("Alice", (Variable('y'), Variable('z'))))
+        triple = Triple.from_obj(args)
+        assert isinstance(triple.object, CollectionPattern)
+        assert triple.object[0] == "Alice"
+        assert isinstance(triple.object[1], CollectionPattern)
+        assert triple.object[1][0] == Variable('y')
+        assert triple.object[1][1] == Variable('z')
+
 class TestIteratingTriple:
     def setup(self):
         self.triple = Triple(Variable('x'), FOAF.name, "Alice")

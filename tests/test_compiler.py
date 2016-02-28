@@ -418,16 +418,30 @@ class TestCompilingSelect(CompilingSelectBase):
             """
         )
 
-    def test_compiling_lists(self):
+    def test_compiling_collections(self):
         select = Select([v.x]).where(
-            (v.x, FOAF.name, (FOAF.knows, v.name))
+            ((v.x, v.y), FOAF.name, (FOAF.knows, v.name))
         )
         output = self.compiler.compile(select)
         assert tokens_equal(
             output, self.PREFIXES,
             """
             SELECT ?x WHERE {
-                ?x foaf:name ( foaf:knows ?name )
+                ( ?x ?y ) foaf:name ( foaf:knows ?name )
+            }
+            """
+        )
+
+    def test_nested_collections(self):
+        select = Select([v.x]).where(
+            (v.x, FOAF.name, ("Alice", (v.y, v.z)))
+        )
+        output = self.compiler.compile(select)
+        assert tokens_equal(
+            output, self.PREFIXES,
+            """
+            SELECT ?x WHERE {
+              ?x foaf:name ( "Alice" ( ?y ?z ) )
             }
             """
         )

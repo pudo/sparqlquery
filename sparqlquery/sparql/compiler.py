@@ -29,7 +29,7 @@ from sparqlquery.sparql import operators
 from sparqlquery.sparql.operators import FunctionCall
 from sparqlquery.sparql.patterns import GroupGraphPattern, UnionGraphPattern
 from sparqlquery.sparql.patterns import GraphPattern, TriplesSameSubject
-from sparqlquery.sparql.patterns import GraphGraphPattern, Triple
+from sparqlquery.sparql.patterns import GraphGraphPattern, Triple, CollectionPattern
 #from sparqlquery.sparql.query import *
 #from sparqlquery.sparql.queryforms import *
 from sparqlquery.sparql.helpers import RDF, XSD, is_a
@@ -103,8 +103,8 @@ class ExpressionCompiler(SPARQLCompiler):
                 return join(self.function(expression), '')
             elif isinstance(expression, Expression):
                 return join(self.unary(expression), '')
-            elif isinstance(expression, tuple):
-                return join(self.tuple_expression(expression))
+            elif isinstance(expression, CollectionPattern):
+                return join(self.collection_pattern(expression))
             else:
                 return self.term(expression)
         else:
@@ -160,7 +160,7 @@ class ExpressionCompiler(SPARQLCompiler):
         yield self.compile(expression, False)
         yield ')'
 
-    def tuple_expression(self, expression):
+    def collection_pattern(self, expression):
         yield "("
         for exp in expression:
             yield self.compile(exp)
