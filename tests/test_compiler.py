@@ -417,3 +417,17 @@ class TestCompilingSelect(CompilingSelectBase):
             }
             """
         )
+
+    def test_compiling_lists(self):
+        select = Select([v.x]).where(
+            (v.x, FOAF.name, (FOAF.knows, v.name))
+        )
+        output = self.compiler.compile(select)
+        assert tokens_equal(
+            output, self.PREFIXES,
+            """
+            SELECT ?x WHERE {
+                ?x foaf:name ( foaf:knows ?name )
+            }
+            """
+        )

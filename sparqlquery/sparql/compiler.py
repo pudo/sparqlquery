@@ -103,6 +103,8 @@ class ExpressionCompiler(SPARQLCompiler):
                 return join(self.function(expression), '')
             elif isinstance(expression, Expression):
                 return join(self.unary(expression), '')
+            elif isinstance(expression, tuple):
+                return join(self.tuple_expression(expression))
             else:
                 return self.term(expression)
         else:
@@ -157,6 +159,12 @@ class ExpressionCompiler(SPARQLCompiler):
         yield '('
         yield self.compile(expression, False)
         yield ')'
+
+    def tuple_expression(self, expression):
+        yield "("
+        for exp in expression:
+            yield self.compile(exp)
+        yield ")"
 
     def conditional(self, expression):
         operator = self.operator(expression.operator)
