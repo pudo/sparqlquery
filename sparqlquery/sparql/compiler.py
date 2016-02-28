@@ -103,8 +103,6 @@ class ExpressionCompiler(SPARQLCompiler):
                 return join(self.function(expression), '')
             elif isinstance(expression, Expression):
                 return join(self.unary(expression), '')
-            elif isinstance(expression, CollectionPattern):
-                return join(self.collection_pattern(expression))
             else:
                 return self.term(expression)
         else:
@@ -159,12 +157,6 @@ class ExpressionCompiler(SPARQLCompiler):
         yield '('
         yield self.compile(expression, False)
         yield ')'
-
-    def collection_pattern(self, expression):
-        yield "("
-        for exp in expression:
-            yield self.compile(exp)
-        yield ")"
 
     def conditional(self, expression):
         operator = self.operator(expression.operator)
@@ -252,6 +244,15 @@ class QueryCompiler(SPARQLCompiler):
         yield 'WHERE'
         yield join(self.graph_pattern(select._where))
 
+    def collection_pattern(self, patterns):
+        yield "("
+        for exp in patterns:
+            if isinstance(exp, CollectionPattern):
+                yield join(self.collection_pattern(exp))
+            else:
+                yield self.expression(exp)
+        yield ")"
+
     def graph_pattern(self, graph_pattern, braces=True):
         from sparqlquery.sparql.query import SPARQLQuery
         if isinstance(graph_pattern, GroupGraphPattern):
@@ -304,9 +305,17 @@ class QueryCompiler(SPARQLCompiler):
 
     def triple(self, triple):
         subject, predicate, object = triple
-        yield self.expression(subject)
+        if isinstance(subject, CollectionPattern):
+            yield join(self.collection_pattern(subject))
+        else:
+            yield self.expression(subject)
+
         yield self.expression(predicate)
-        yield self.expression(object)
+
+        if isinstance(object, CollectionPattern):
+            yield join(self.collection_pattern(object))
+        else:
+            yield self.expression(object)
 
     def triples_same_subject(self, triples):
         yield self.expression(triples.subject)
