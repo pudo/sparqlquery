@@ -2,8 +2,22 @@ import warnings
 from sparqlquery.sparql.expressions import and_
 
 __all__ = ['Triple', 'TriplesSameSubject', 'Filter', 'GraphPattern',
-           'GroupGraphPattern', 'UnionGraphPattern', 'union',
-           'optional', 'graph']
+           'GroupGraphPattern', 'UnionGraphPattern', 'CollectionPattern',
+           'union', 'optional', 'graph']
+
+
+class CollectionPattern(tuple):
+    def __str__(self):
+        return "CollectionPattern(%s)" % ", ".join(list(self))
+
+    @classmethod
+    def from_obj(cls, obj):
+        objs = []
+        for o in obj:
+            if isinstance(o, tuple):
+                o = cls.from_obj(o)
+            objs.append(o)
+        return cls(tuple(objs))
 
 
 class Triple(object):
@@ -22,8 +36,15 @@ class Triple(object):
     def from_obj(cls, obj):
         if isinstance(obj, Triple):
             return obj
-        else:
-            return cls(*obj)
+
+        s = obj[0]
+        p = obj[1]
+        o = obj[2]
+        if isinstance(s, tuple):
+            s = CollectionPattern.from_obj(s)
+        if isinstance(o, tuple):
+            o = CollectionPattern.from_obj(o)
+        return cls(s, p, o)
 
 
 class TriplesBlock(object):

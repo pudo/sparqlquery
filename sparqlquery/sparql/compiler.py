@@ -29,7 +29,7 @@ from sparqlquery.sparql import operators
 from sparqlquery.sparql.operators import FunctionCall
 from sparqlquery.sparql.patterns import GroupGraphPattern, UnionGraphPattern
 from sparqlquery.sparql.patterns import GraphPattern, TriplesSameSubject
-from sparqlquery.sparql.patterns import GraphGraphPattern, Triple
+from sparqlquery.sparql.patterns import GraphGraphPattern, Triple, CollectionPattern
 #from sparqlquery.sparql.query import *
 #from sparqlquery.sparql.queryforms import *
 from sparqlquery.sparql.helpers import RDF, XSD, is_a
@@ -244,6 +244,15 @@ class QueryCompiler(SPARQLCompiler):
         yield 'WHERE'
         yield join(self.graph_pattern(select._where))
 
+    def collection_pattern(self, patterns):
+        yield "("
+        for exp in patterns:
+            if isinstance(exp, CollectionPattern):
+                yield join(self.collection_pattern(exp))
+            else:
+                yield self.expression(exp)
+        yield ")"
+
     def graph_pattern(self, graph_pattern, braces=True):
         from sparqlquery.sparql.query import SPARQLQuery
         if isinstance(graph_pattern, GroupGraphPattern):
@@ -296,9 +305,17 @@ class QueryCompiler(SPARQLCompiler):
 
     def triple(self, triple):
         subject, predicate, object = triple
-        yield self.expression(subject)
+        if isinstance(subject, CollectionPattern):
+            yield join(self.collection_pattern(subject))
+        else:
+            yield self.expression(subject)
+
         yield self.expression(predicate)
-        yield self.expression(object)
+
+        if isinstance(object, CollectionPattern):
+            yield join(self.collection_pattern(object))
+        else:
+            yield self.expression(object)
 
     def triples_same_subject(self, triples):
         yield self.expression(triples.subject)
