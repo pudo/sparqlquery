@@ -21,7 +21,7 @@ For example, `QueryCompiler.compile()` joins the tokens yielded by calling
 from operator import itemgetter
 from rdflib import Literal, URIRef, Namespace
 from rdflib.term import Variable
-#from sparqlquery.exceptions import *
+from sparqlquery.exceptions import InvalidRequestError
 from sparqlquery.sparql.expressions import ConditionalExpression
 from sparqlquery.sparql.expressions import ListExpression
 from sparqlquery.sparql.expressions import BinaryExpression, Expression
@@ -414,3 +414,43 @@ class ConstructCompiler(SolutionModifierSupportingQueryCompiler):
             for token in self.graph_pattern(template, False):
                 yield token
         yield '}'
+
+
+class UpdateCompiler(QueryCompiler):
+    def clauses(self, query):
+        try:
+            yield join(self.prefixes(), '\n')
+
+            if not query._where:
+                assert query._insert or query._delete, 'Update query has to include insert or delete clause'
+                if query._insert:
+                    assert isinstance(query._insert, GraphPattern)
+                    assert not query._delete, 'Cannot mix INSERT DATA and DELETE DATA'
+                    yield 'INSERT DATA'
+                    for clause in self.graph_pattern(query._insert):
+                        yield clause
+                elif query._delete:
+                    assert isinstance(query._delete, GraphPattern)
+                    assert not query._insert, 'Cannot mix INSERT DATA and DELETE DATA'
+                    yield 'DELETE DATA'
+                    for clause in self.graph_pattern(query._delete):
+                        yield clause
+            else:
+                if not query._insert and not query._delete and query.empty_delete:  # DELETE WHERE
+                    yield 'DELETE WHERE'
+                    for clause in self.graph_pattern(query._where):
+                        yield clause
+                else:
+                    if query._delete:
+                        yield 'DELETE'
+                        for clause in self.graph_pattern(query._delete):
+                            yield clause
+                    if query._insert:
+                        yield 'INSERT'
+                        for clause in self.graph_pattern(query._insert):
+                            yield clause
+                    yield 'WHERE'
+                    for clause in self.graph_pattern(query._where):
+                        yield clause
+        except AssertionError as e:
+            raise InvalidRequestError(e.message)

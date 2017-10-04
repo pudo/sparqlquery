@@ -2,7 +2,6 @@ from nose.tools import assert_raises
 from sparqlquery import Variable, Namespace
 from sparqlquery.sparql.patterns import *
 from sparqlquery.sparql.queryforms import Select
-from sparqlquery.sparql.expressions import *
 from sparqlquery.sparql.helpers import *
 
 FOAF = Namespace('http://xmlns.com/foaf/0.1/')
