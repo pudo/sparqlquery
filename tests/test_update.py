@@ -7,7 +7,6 @@ import pytest
 
 
 class TestUpdate(object):
-    # TODO check period on separate line
     def test_insert_data(self):
         insert_data = (URIRef('http://example/book1'), DC.title, Literal('A new book')),\
                       (URIRef('http://example/book1'), DC.creator, Literal('A.N.Other'))
@@ -15,8 +14,7 @@ class TestUpdate(object):
         oracle_sparql = u"""PREFIX dc: <http://purl.org/dc/elements/1.1/>
 INSERT DATA
 {
-<http://example/book1> dc:title "A new book"
-.
+<http://example/book1> dc:title "A new book" .
 <http://example/book1> dc:creator "A.N.Other"
 }"""
         sparql = q.compile(prefix_map={DC: 'dc'})
@@ -29,8 +27,7 @@ INSERT DATA
         oracle_sparql = u"""PREFIX dc: <http://purl.org/dc/elements/1.1/>
 DELETE DATA
 {
-<http://example/book1> dc:title "A new book"
-.
+<http://example/book1> dc:title "A new book" .
 <http://example/book1> dc:creator "A.N.Other"
 }"""
         sparql = q.compile(prefix_map={DC: 'dc'})
@@ -47,10 +44,8 @@ DELETE DATA
         oracle_sparql = u"""PREFIX dc: <http://purl.org/dc/elements/1.1/>
 DELETE WHERE
 {
-?x dc:creator "John Doe"
-.
-?x dc:price ?price
-.
+?x dc:creator "John Doe" .
+?x dc:price ?price .
 FILTER (?price <= 20)
 }"""
         sparql = q.compile(prefix_map={DC: 'dc'})
@@ -68,10 +63,8 @@ INSERT
 }
 WHERE
 {
-?x dc:creator "John Doe"
-.
-?x dc:price ?price
-.
+?x dc:creator "John Doe" .
+?x dc:price ?price .
 FILTER (?price <= 20)
 }"""
         sparql = q.compile(prefix_map={DC: 'dc'})
@@ -94,10 +87,8 @@ INSERT
 }
 WHERE
 {
-?x dc:creator "John Doe"
-.
-?x dc:price ?price
-.
+?x dc:creator "John Doe" .
+?x dc:price ?price .
 FILTER (?price <= 20)
 }"""
         sparql = q.compile(prefix_map={DC: 'dc'})

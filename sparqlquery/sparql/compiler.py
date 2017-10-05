@@ -45,6 +45,12 @@ def join(tokens, sep=' '):
     return sep.join([unicode(token) for token in tokens if token])
 
 
+def add_period_if(seq, add=True):
+    """Query clauses are joined by \n. For period to be on the same line,
+    we have to add period to the last token"""
+    return seq + ' .' if add else seq
+
+
 class SPARQLCompiler(object):
     """
     Base class for compiling Python representations of SPARQL concepts to
@@ -270,36 +276,29 @@ class QueryCompiler(SPARQLCompiler):
         while patterns:
             pattern = patterns.pop(0)
             if isinstance(pattern, Triple):
-                yield join(self.triple(pattern))
-                if patterns or filters:
-                    yield '.'
+                yield add_period_if(join(self.triple(pattern)), bool(patterns or filters))
             elif isinstance(pattern, SPARQLQuery):
                 yield '{'
                 yield pattern.compile(prefix_map=self.prefix_map,
                                       render_prefixes=False)
-                yield '}'
-                if patterns or filters:
-                    yield '.'
+                yield add_period_if('}', bool(patterns or filters))
             elif isinstance(pattern, TriplesSameSubject):
-                yield join(self.triples_same_subject(pattern))
-                if patterns or filters:
-                    yield '.'
+                yield add_period_if(join(self.triples_same_subject(pattern)), bool(patterns or filters))
             elif isinstance(pattern, UnionGraphPattern):
                 for i, alternative in enumerate(pattern.patterns):
                     if i:
                         yield 'UNION'
                     yield join(self.graph_pattern(alternative, True))
             elif isinstance(pattern, GraphPattern):
-                token = None
-                for token in self.graph_pattern(pattern, False):
-                    yield token
-                if token != '}' and (patterns or filters):
-                    yield '.'
+                tokens = list(self.graph_pattern(pattern, False))
+                for token in tokens:
+                    if token is not tokens[-1]:
+                        yield token
+                    else:
+                        yield add_period_if(token, bool(token != '}' and (patterns or filters)))
         while filters:
             filter = filters.pop(0)
-            yield join(self.filter(filter))
-            if filters:
-                yield '.'
+            yield add_period_if(join(self.filter(filter)), bool(filters))
         if braces:
             yield '}'
 
