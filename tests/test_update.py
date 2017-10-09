@@ -3,7 +3,7 @@ from rdflib import URIRef, Literal
 from sparqlquery.sparql.query import SPARQLUpdateQuery
 from sparqlquery.exceptions import InvalidRequestError
 from sparqlquery import v
-import pytest
+from nose.tools import raises
 
 
 class TestUpdate(object):
@@ -33,9 +33,9 @@ DELETE DATA
         sparql = q.compile(prefix_map={DC: 'dc'})
         assert sparql == oracle_sparql
 
+    @raises(InvalidRequestError)
     def test_empty_query_raises(self):
-        with pytest.raises(InvalidRequestError):
-            SPARQLUpdateQuery().compile()
+        SPARQLUpdateQuery().compile()
 
     def test_delete_where(self):
         where = (v.x, DC.creator, Literal('John Doe')),\
