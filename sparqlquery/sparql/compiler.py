@@ -21,7 +21,7 @@ For example, `QueryCompiler.compile()` joins the tokens yielded by calling
 from operator import itemgetter
 from rdflib import Literal, URIRef, Namespace
 from rdflib.term import Variable
-#from sparqlquery.exceptions import *
+from sparqlquery.exceptions import InvalidRequestError
 from sparqlquery.sparql.expressions import ConditionalExpression
 from sparqlquery.sparql.expressions import ListExpression
 from sparqlquery.sparql.expressions import BinaryExpression, Expression
@@ -43,6 +43,12 @@ __all__ = ['SPARQLCompiler', 'ExpressionCompiler', 'QueryCompiler',
 
 def join(tokens, sep=' '):
     return sep.join([unicode(token) for token in tokens if token])
+
+
+def add_period_if(seq, add=True):
+    """Query clauses are joined by \n. For period to be on the same line,
+    we have to add period to the last token"""
+    return seq + ' .' if add else seq
 
 
 class SPARQLCompiler(object):
@@ -270,36 +276,29 @@ class QueryCompiler(SPARQLCompiler):
         while patterns:
             pattern = patterns.pop(0)
             if isinstance(pattern, Triple):
-                yield join(self.triple(pattern))
-                if patterns or filters:
-                    yield '.'
+                yield add_period_if(join(self.triple(pattern)), bool(patterns or filters))
             elif isinstance(pattern, SPARQLQuery):
                 yield '{'
                 yield pattern.compile(prefix_map=self.prefix_map,
                                       render_prefixes=False)
-                yield '}'
-                if patterns or filters:
-                    yield '.'
+                yield add_period_if('}', bool(patterns or filters))
             elif isinstance(pattern, TriplesSameSubject):
-                yield join(self.triples_same_subject(pattern))
-                if patterns or filters:
-                    yield '.'
+                yield add_period_if(join(self.triples_same_subject(pattern)), bool(patterns or filters))
             elif isinstance(pattern, UnionGraphPattern):
                 for i, alternative in enumerate(pattern.patterns):
                     if i:
                         yield 'UNION'
                     yield join(self.graph_pattern(alternative, True))
             elif isinstance(pattern, GraphPattern):
-                token = None
-                for token in self.graph_pattern(pattern, False):
-                    yield token
-                if token != '}' and (patterns or filters):
-                    yield '.'
+                tokens = list(self.graph_pattern(pattern, False))
+                for token in tokens:
+                    if token is not tokens[-1]:
+                        yield token
+                    else:
+                        yield add_period_if(token, bool(token != '}' and (patterns or filters)))
         while filters:
             filter = filters.pop(0)
-            yield join(self.filter(filter))
-            if filters:
-                yield '.'
+            yield add_period_if(join(self.filter(filter)), bool(filters))
         if braces:
             yield '}'
 
@@ -414,3 +413,43 @@ class ConstructCompiler(SolutionModifierSupportingQueryCompiler):
             for token in self.graph_pattern(template, False):
                 yield token
         yield '}'
+
+
+class UpdateCompiler(QueryCompiler):
+    def clauses(self, query):
+        try:
+            yield join(self.prefixes(), '\n')
+
+            if not query._where:
+                assert query._insert or query._delete, 'Update query has to include insert or delete clause'
+                if query._insert:
+                    assert isinstance(query._insert, GraphPattern)
+                    assert not query._delete, 'Cannot mix INSERT DATA and DELETE DATA'
+                    yield 'INSERT DATA'
+                    for clause in self.graph_pattern(query._insert):
+                        yield clause
+                elif query._delete:
+                    assert isinstance(query._delete, GraphPattern)
+                    assert not query._insert, 'Cannot mix INSERT DATA and DELETE DATA'
+                    yield 'DELETE DATA'
+                    for clause in self.graph_pattern(query._delete):
+                        yield clause
+            else:
+                if not query._insert and not query._delete and query.empty_delete:  # DELETE WHERE
+                    yield 'DELETE WHERE'
+                    for clause in self.graph_pattern(query._where):
+                        yield clause
+                else:
+                    if query._delete:
+                        yield 'DELETE'
+                        for clause in self.graph_pattern(query._delete):
+                            yield clause
+                    if query._insert:
+                        yield 'INSERT'
+                        for clause in self.graph_pattern(query._insert):
+                            yield clause
+                    yield 'WHERE'
+                    for clause in self.graph_pattern(query._where):
+                        yield clause
+        except AssertionError as e:
+            raise InvalidRequestError(e.message)

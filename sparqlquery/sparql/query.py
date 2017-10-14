@@ -4,7 +4,7 @@ from sparqlquery.sparql.util import to_variable, to_list
 
 
 __all__ = ['SPARQLQuery', 'SolutionModifierSupportingQuery',
-           'ProjectionSupportingQuery']
+           'ProjectionSupportingQuery', 'SPARQLUpdateQuery']
 
 
 class SPARQLQuery(object):
@@ -178,3 +178,39 @@ class ProjectionSupportingQuery(SolutionModifierSupportingQuery):
             for variable in map(to_variable, to_list(arg)):
                 projection.append(variable)
         return self._clone(projection=tuple(projection))
+
+
+class SPARQLUpdateQuery(SPARQLQuery):
+    """INSERT DATA\DELETE DATA\DELETE and\or INSERT WHERE\DELETE WHERE queries as described in
+    https://www.w3.org/TR/sparql11-update/"""
+    def __init__(self, where_pattern=None):
+        super(SPARQLUpdateQuery, self).__init__(where_pattern)
+        self._delete = GroupGraphPattern([])
+        self._insert = GroupGraphPattern([])
+        # delete() can be called without graph pattern (DELETE WHERE), so we have to distinguish
+        # between absent delete and delete without arguments (empty_delete)
+        self.empty_delete = False
+
+    def insert(self, pattern):
+        clone = self._clone()
+        if not isinstance(pattern, GroupGraphPattern):
+            pattern = GroupGraphPattern.from_obj(pattern)
+        clone._insert.pattern(pattern)
+        return clone
+
+    def delete(self, pattern=None):  # Empty delete pattern means DELETE WHERE
+        clone = self._clone()
+        if pattern is None:
+            clone.empty_delete = True
+            return clone
+        elif not isinstance(pattern, GroupGraphPattern):
+            pattern = GroupGraphPattern.from_obj(pattern)
+        clone._delete.pattern(pattern)
+        return clone
+
+    def execute(self, graph, prefix_map=None):
+        graph.update(unicode(self.compile(prefix_map)))
+
+    def _get_compiler_class(self):
+        from sparqlquery.sparql.compiler import UpdateCompiler
+        return UpdateCompiler
