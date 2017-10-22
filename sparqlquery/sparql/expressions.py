@@ -86,8 +86,8 @@ class Expression(object):
 
     __mul__ = binary(operator.mul)
     __rmul__ = binary.r(operator.mul)
-    __div__ = binary(operator.div)
-    __rdiv__ = binary.r(operator.div)
+    __div__ = binary(operator.truediv)
+    __rdiv__ = binary.r(operator.truediv)
 
     # List check.
 

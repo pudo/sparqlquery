@@ -80,7 +80,7 @@ class ExpressionCompiler(SPARQLCompiler):
         operators.and_: 1, 'logical-and': 1,
         operators.eq: 2, 'RDFTerm-equal': 2, operators.ne: 2,
         operators.lt: 2, operators.gt: 2, operators.le: 2, operators.ge: 2,
-        operators.add: 3, operators.sub: 3, operators.mul: 4, operators.div: 4,
+        operators.add: 3, operators.sub: 3, operators.mul: 4, operators.truediv: 4,
         operators.pos: 5, operators.neg: 5,
         operators.invert: 5, operators.inv: 5
     }
@@ -92,7 +92,7 @@ class ExpressionCompiler(SPARQLCompiler):
         operators.lt: '<', operators.gt: '>',
         operators.le: '<=', operators.ge: '>=',
         operators.add: '+', operators.sub: '-',
-        operators.mul: '*', operators.div: '/',
+        operators.mul: '*', operators.truediv: '/',
         operators.pos: '+', operators.neg: '-',
         operators.invert: '!', operators.inv: '!'
     }
