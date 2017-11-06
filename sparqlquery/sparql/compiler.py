@@ -248,7 +248,7 @@ class QueryCompiler(SPARQLCompiler):
 
     def where(self, select):
         yield 'WHERE'
-        yield join(self.graph_pattern(select._where))
+        yield join(self.graph_pattern(select._where), sep='\n')
 
     def collection_pattern(self, patterns):
         yield "("
