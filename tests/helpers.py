@@ -6,7 +6,7 @@ UNARY_OPERATORS = [operator.pos, operator.neg, operator.invert, operator.inv]
 CONDITIONAL_OPERATORS = [operator.and_, operator.or_]
 BINARY_OPERATORS = [operator.eq, operator.ne, operator.lt, operator.gt,
                     operator.le, operator.ge, operator.add, operator.sub,
-                    operator.mul, operator.truediv]
+                    operator.mul, operator.div, operator.truediv]
 BUILTIN_OPERATORS = ['bound', 'isIRI', 'isBlank', 'isLiteral', 'str',
                      'lang', 'datatype', 'logical-or', 'logical-and',
                      'RDFTerm-equal', 'sameTerm', 'langMatches', 'regex']
