@@ -183,23 +183,27 @@ class ProjectionSupportingQuery(SolutionModifierSupportingQuery):
 class SPARQLUpdateQuery(SPARQLQuery):
     """INSERT DATA\DELETE DATA\DELETE and\or INSERT WHERE\DELETE WHERE queries as described in
     https://www.w3.org/TR/sparql11-update/"""
-    def __init__(self, where_pattern=None):
+    def __init__(self, where_pattern=None, delete_pattern=None, insert_pattern=None):
         super(SPARQLUpdateQuery, self).__init__(where_pattern)
         self._delete = GroupGraphPattern([])
+        if delete_pattern is not None:
+            self.delete(delete_pattern, return_clone=False)
         self._insert = GroupGraphPattern([])
+        if insert_pattern:
+            self.insert(insert_pattern, return_clone=False)
         # delete() can be called without graph pattern (DELETE WHERE), so we have to distinguish
         # between absent delete and delete without arguments (empty_delete)
         self.empty_delete = False
 
-    def insert(self, pattern):
-        clone = self._clone()
+    def insert(self, pattern, return_clone=True):
+        clone = self._clone() if return_clone else self
         if not isinstance(pattern, GroupGraphPattern):
             pattern = GroupGraphPattern.from_obj(pattern)
         clone._insert.pattern(pattern)
         return clone
 
-    def delete(self, pattern=None):  # Empty delete pattern means DELETE WHERE
-        clone = self._clone()
+    def delete(self, pattern=None, return_clone=True):  # Empty delete pattern means DELETE WHERE
+        clone = self._clone() if return_clone else self
         if pattern is None:
             clone.empty_delete = True
             return clone
