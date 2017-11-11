@@ -331,30 +331,31 @@ class TestCompilingSelect(CompilingSelectBase):
         select = Select([v.name, v.mbox]).where(
             (v.x, FOAF.name, v.name), (v.x, FOAF.mbox, v.mbox)
         )
-        assert tokens_equal(
-            self.compiler.compile(select), self.PREFIXES,
-            """
-            SELECT ?name ?mbox WHERE {
-                ?x foaf:name ?name .
-                ?x foaf:mbox ?mbox
-            }
-            """
-        )
-    
+        assert_equal(self.compiler.compile(select),
+                     u"""PREFIX foaf: <http://xmlns.com/foaf/0.1/>
+PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+SELECT ?name ?mbox
+WHERE {
+?x foaf:name ?name .
+?x foaf:mbox ?mbox
+}""")
+
+
     def test_compiling_where_outputs_optional_graph_pattern(self):
         select = Select([v.name, v.mbox]).where(
             (v.x, FOAF.name, v.name),
             optional((v.x, FOAF.mbox, v.mbox))
         )
-        assert tokens_equal(
-            self.compiler.compile(select), self.PREFIXES,
-            """
-            SELECT ?name ?mbox WHERE {
-                ?x foaf:name ?name .
-                OPTIONAL { ?x foaf:mbox ?mbox }
-            }
-            """
-        )
+        assert_equal(self.compiler.compile(select), u"""PREFIX foaf: <http://xmlns.com/foaf/0.1/>
+PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+SELECT ?name ?mbox
+WHERE {
+?x foaf:name ?name .
+OPTIONAL
+{
+?x foaf:mbox ?mbox
+}
+}""")
     
     def test_compiling_where_outputs_union_graph_pattern(self):
         select = Select([v.title]).where(union(
@@ -378,30 +379,28 @@ class TestCompilingSelect(CompilingSelectBase):
             (v.x, FOAF.name, v.name), (v.x, FOAF.mbox, v.mbox)
         ).filter(op.regex(v.name, "Smith"))
         
-        assert tokens_equal(
-            self.compiler.compile(select), self.PREFIXES,
-            """
-            SELECT ?x WHERE {
-                ?x foaf:name ?name .
-                ?x foaf:mbox ?mbox .
-                FILTER regex(?name, "Smith")
-            }
-            """
-        )
+        assert_equal(self.compiler.compile(select),
+                     u"""PREFIX foaf: <http://xmlns.com/foaf/0.1/>
+PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+SELECT ?x
+WHERE {
+?x foaf:name ?name .
+?x foaf:mbox ?mbox .
+FILTER regex(?name, "Smith")
+}""")
     
     def test_compiling_where_outputs_all_filters(self):
         select = Select([v.x]).filter(op.bound(v.x)).filter(v.x > 0).filter(v.x < 10)
         output = self.compiler.compile(select)
-        assert tokens_equal(
-            output, self.PREFIXES,
-            """
-            SELECT ?x WHERE {
-                FILTER bound(?x) .
-                FILTER (?x > 0) .
-                FILTER (?x < 10)
-            }
-            """
-        )
+        assert_equal(output,
+                     u"""PREFIX foaf: <http://xmlns.com/foaf/0.1/>
+PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+SELECT ?x
+WHERE {
+FILTER bound(?x) .
+FILTER (?x > 0) .
+FILTER (?x < 10)
+}""")
 
     def test_compiling_where_outputs_graph_graph_pattern(self):
         select = Select([v.name]).where(
