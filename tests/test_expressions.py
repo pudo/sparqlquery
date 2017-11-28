@@ -1,9 +1,10 @@
 import operator
 from nose.tools import assert_raises
-from rdflib import Variable, Namespace, URIRef, Literal, BNode
+from rdflib import Variable, Namespace, URIRef, Literal, BNode, RDF, RDFS, XSD
 from sparqlquery.sparql.expressions import *
 from sparqlquery.sparql.helpers import XSD
 import helpers
+
 
 class TestCreatingExpression:
     def setup(self):
@@ -27,6 +28,22 @@ class TestCreatingExpression:
     def test_default_datatype_is_none(self):
         assert self.one.datatype is None
         assert self.neg_one.datatype is None
+
+
+class TestNamespaceAsExpression(object):
+    def test_namespace_emits_uriref(self):
+        """Check if all namespaces are compiled equally
+        RDF and RDFS are implemented as a separate class ClosedNamespace, but they have to be treated same way as others
+        """
+        ns_to_uri = {
+            XSD: 'http://www.w3.org/2001/XMLSchema#',
+            RDF: 'http://www.w3.org/1999/02/22-rdf-syntax-ns#',
+            RDFS: 'http://www.w3.org/2000/01/rdf-schema#',
+            Namespace('http://example.org/ns#'): 'http://example.org/ns#'
+        }
+        for ns, uri in ns_to_uri.iteritems():
+            assert Expression(ns).compile() == "<%s>" % uri
+
 
 class TestCreatingBinaryExpression:
     def setup(self):

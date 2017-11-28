@@ -20,7 +20,7 @@ For example, `QueryCompiler.compile()` joins the tokens yielded by calling
 """
 from operator import itemgetter
 from rdflib import Literal, URIRef, Namespace
-from rdflib.term import Variable
+from rdflib.namespace import ClosedNamespace
 from sparqlquery.exceptions import InvalidRequestError
 from sparqlquery.sparql.expressions import ConditionalExpression
 from sparqlquery.sparql.expressions import ListExpression
@@ -30,8 +30,6 @@ from sparqlquery.sparql.operators import FunctionCall
 from sparqlquery.sparql.patterns import GroupGraphPattern, UnionGraphPattern
 from sparqlquery.sparql.patterns import GraphPattern, TriplesSameSubject
 from sparqlquery.sparql.patterns import GraphGraphPattern, Triple, CollectionPattern
-#from sparqlquery.sparql.query import *
-#from sparqlquery.sparql.queryforms import *
 from sparqlquery.sparql.helpers import RDF, XSD, is_a
 from sparqlquery.sparql.util import defrag, to_list
 
@@ -137,6 +135,9 @@ class ExpressionCompiler(SPARQLCompiler):
     def term(self, term, use_prefix=True):
         if isinstance(term, Namespace):
             term = URIRef(term)
+        # RDF and RDFS namespaces are implemented in rdflib as a separate class ClosedNamespace
+        elif isinstance(term, ClosedNamespace):
+            term = term.uri
         if term is None:
             return RDF.nil
         elif not hasattr(term, 'n3'):
