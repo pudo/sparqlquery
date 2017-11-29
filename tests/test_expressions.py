@@ -45,6 +45,14 @@ class TestNamespaceAsExpression(object):
             assert Expression(ns).compile() == "<%s>" % uri
 
 
+class TestLiteralDatatype(object):
+    prefix_map = {XSD: 'xsd'}
+
+    def test_literal_datatype_is_abbreviated(self):
+        l = Literal(100500, datatype=XSD.long)
+        assert Expression(l).compile(prefix_map=self.prefix_map) == '"100500"^^xsd:long'
+
+
 class TestCreatingBinaryExpression:
     def setup(self):
         self.expr = BinaryExpression(operator.add, 1, 2)

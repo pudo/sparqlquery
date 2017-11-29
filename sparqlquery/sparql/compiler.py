@@ -179,6 +179,9 @@ class ExpressionCompiler(SPARQLCompiler):
         elif isinstance(term, Literal):
             if term.datatype in (XSD.double, XSD.integer, XSD.float, XSD.boolean):
                 return unicode(term).lower()
+            elif use_prefix and term.datatype:  # Abbreviate datatype if possible
+                datatype_term = self.uri(term.datatype)
+                return '"%s"^^%s' % (term, datatype_term)
         elif isinstance(term, Namespace):
             return unicode(term)
         return term.n3()
