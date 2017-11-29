@@ -49,6 +49,41 @@ def add_period_if(seq, add=True):
     return seq + ' .' if add else seq
 
 
+def namespace_to_uri(namespace):
+    """Extract ns URI from namespace object (Namespace and ClosedNamespace (RDF, RDFS) don't have common ancestor)"""
+    if isinstance(namespace, Namespace):
+        return unicode(namespace)
+    elif isinstance(namespace, ClosedNamespace):
+        return unicode(namespace.uri)
+
+
+class PrefixMap(dict):
+    """
+    Mapping from namespace to its prefix
+    Cannot use just dict here, because namespaces in rdflib have different classes not having common ancestors,
+    so trying to find prefix by namespace obj of wrong type (consider search of RDF prefix, while RDF is a
+    ClosedNamespace) would fail.
+    So here we store namespace obj->prefix together with namespace uri->namespace, trying to find namespace by its
+    uri if lookup by namespace obj failed
+    """
+    def __init__(self, *args, **kwargs):
+        super(PrefixMap, self).__init__(*args, **kwargs)
+        self.uri_to_ns = {namespace_to_uri(ns): ns for ns in self.iterkeys()}
+
+    def __getitem__(self, ns):
+        try:
+            return super(PrefixMap, self).__getitem__(ns)
+        except KeyError:
+            # Normalize namespace (get its uri regardless of its type), find ns by uri, return its prefix
+            uri = namespace_to_uri(ns)
+            ns_by_uri = self.uri_to_ns[uri]
+            return super(PrefixMap, self).__getitem__(ns_by_uri)
+
+    def __setitem__(self, ns, prefix):
+        super(PrefixMap, self).__setitem__(ns, prefix)
+        self.uri_to_ns[namespace_to_uri(ns)] = prefix
+
+
 class SPARQLCompiler(object):
     """
     Base class for compiling Python representations of SPARQL concepts to
@@ -66,7 +101,7 @@ class SPARQLCompiler(object):
     def __init__(self, prefix_map=None):
         if prefix_map is None:
             prefix_map = {}
-        self.prefix_map = prefix_map
+        self.prefix_map = PrefixMap(prefix_map)
 
     def compile(self, obj):
         raise NotImplementedError
@@ -133,11 +168,8 @@ class ExpressionCompiler(SPARQLCompiler):
             return '%s:%s' % (prefix, fragment)
 
     def term(self, term, use_prefix=True):
-        if isinstance(term, Namespace):
-            term = URIRef(term)
-        # RDF and RDFS namespaces are implemented in rdflib as a separate class ClosedNamespace
-        elif isinstance(term, ClosedNamespace):
-            term = term.uri
+        if isinstance(term, (Namespace, ClosedNamespace)):
+            term = URIRef(namespace_to_uri(term))
         if term is None:
             return RDF.nil
         elif not hasattr(term, 'n3'):
@@ -147,6 +179,9 @@ class ExpressionCompiler(SPARQLCompiler):
         elif isinstance(term, Literal):
             if term.datatype in (XSD.double, XSD.integer, XSD.float, XSD.boolean):
                 return unicode(term).lower()
+            elif use_prefix and term.datatype:  # Abbreviate datatype if possible
+                datatype_term = self.uri(term.datatype)
+                return '"%s"^^%s' % (term, datatype_term)
         elif isinstance(term, Namespace):
             return unicode(term)
         return term.n3()
